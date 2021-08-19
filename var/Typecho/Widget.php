@@ -240,6 +240,32 @@ abstract class Typecho_Widget
     }
 
     /**
+     * execute function.
+     *
+     * @access public
+     * @return void
+     */
+    public function execute()
+    {
+    }
+
+    /**
+     * post事件触发
+     *
+     * @param boolean $condition 触发条件
+     *
+     * @return $this|Typecho_Widget_Helper_Empty
+     */
+    public function on(bool $condition)
+    {
+        if ($condition) {
+            return $this;
+        } else {
+            return new Typecho_Widget_Helper_Empty();
+        }
+    }
+
+    /**
      * 将类本身赋值
      *
      * @param string $variable 变量名
