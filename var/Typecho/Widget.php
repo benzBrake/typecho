@@ -117,41 +117,6 @@ abstract class Typecho_Widget
     }
 
     /**
-     * 解析回调
-     * 
-     * @param array $matches 
-     * @access protected
-     * @return string
-     */
-    protected function __parseCallback($matches)
-    {
-        return $this->{$matches[1]};
-    }
-
-    /**
-     * execute function.
-     *
-     * @access public
-     * @return void
-     */
-    public function execute() {}
-
-    /**
-     * post事件触发
-     *
-     * @param boolean $condition 触发条件
-     * @return mixed
-     */
-    public function on($condition)
-    {
-        if ($condition) {
-            return $this;
-        } else {
-            return new Typecho_Widget_Helper_Empty();
-        }
-    }
-
-    /**
      * 获取对象插件句柄
      *
      * @access public
@@ -255,7 +220,7 @@ abstract class Typecho_Widget
      *
      * @return $this|Typecho_Widget_Helper_Empty
      */
-    public function on(bool $condition)
+    protected function on($condition)
     {
         if ($condition) {
             return $this;
@@ -320,28 +285,6 @@ abstract class Typecho_Widget
         $num = func_num_args();
         $split = $this->sequence % $num;
         echo $args[(0 == $split ? $num : $split) - 1];
-    }
-
-    /**
-     * 输出顺序值
-     *
-     * @access public
-     * @return void
-     */
-    public function sequence()
-    {
-        echo $this->sequence;
-    }
-
-    /**
-     * 输出数据长度
-     *
-     * @access public
-     * @return void
-     */
-    public function length()
-    {
-        echo $this->length;
     }
 
     /**
@@ -438,22 +381,6 @@ abstract class Typecho_Widget
     }
 
     /**
-     * @return int
-     */
-    public function getSequence(): int
-    {
-        return $this->sequence;
-    }
-
-    /**
-     * @return int
-     */
-    public function getLength(): int
-    {
-        return $this->length;
-    }
-
-    /**
      * 验证堆栈值是否存在
      *
      * @access public
@@ -463,5 +390,38 @@ abstract class Typecho_Widget
     public function __isSet($name)
     {
         return isset($this->row[$name]);
+    }
+
+    /**
+     * 输出顺序值
+     *
+     * @return int
+     */
+    public function ___sequence()
+    {
+        return $this->sequence;
+    }
+
+    /**
+     * 输出数据长度
+     *
+     * @return int
+     */
+    public function ___length()
+    {
+        return $this->length;
+    }
+
+    /**
+     * 解析回调
+     *
+     * @param array $matches
+     *
+     * @access protected
+     * @return string
+     */
+    protected function __parseCallback(array $matches)
+    {
+        return $this->{$matches[1]};
     }
 }
