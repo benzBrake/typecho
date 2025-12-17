@@ -9,6 +9,7 @@
 /upload/
 /avatar/
 /.idea/
+/.vscode/
 .svn/
 *.orig
 *.aps
@@ -33,3 +34,4 @@ config.rb
 !/usr/themes/default
 node_modules/
 /tools/tmp/
+/pack/
