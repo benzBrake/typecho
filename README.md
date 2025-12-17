@@ -1,19 +1,22 @@
-Typecho Blogging Platform
-=========================
+# Typecho Blogging Platform
 
-Typecho is a PHP Blogging Platform. Simple and Powerful.
+Typecho is a simple yet powerful PHP blogging platform.
 
-#### Telegram Channel
-https://t.me/typechodev
+## Features
 
-#### Homepage
-http://typecho.org/
+- **Lightweight and Efficient**: Core code is streamlined, runs fast with minimal resource usage
+- **Clean and Elegant**: Simple interface design with user-friendly experience
+- **Highly Extensible**: Supports plugins and themes for personalization
+- **Secure and Stable**: Focuses on code quality and security
 
-#### Documents
-http://docs.typecho.org/
+## PHP 5.3 Compatible Version
 
-#### Community
-http://forum.typecho.org/
+This version has been ported to be compatible with PHP 5.3, ensuring it can run properly on servers with older PHP versions, making it suitable for environments using legacy PHP.
 
-#### Download
-http://typecho.org/download
+## Official Resources
+
+- **Telegram Channel**: https://t.me/typechodev
+- **Official Website**: http://typecho.org/
+- **Documentation**: http://docs.typecho.org/
+- **Community Forum**: http://forum.typecho.org/
+- **Download**: http://typecho.org/download
