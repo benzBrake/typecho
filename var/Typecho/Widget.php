@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Typecho Blog Platform
  *
@@ -133,7 +134,7 @@ abstract class Typecho_Widget
      * @access public
      * @return void
      */
-    public function execute(){}
+    public function execute() {}
 
     /**
      * post事件触发
@@ -213,7 +214,7 @@ abstract class Typecho_Widget
 
             /** 初始化response */
             $responseObject = $enableResponse ? Typecho_Response::getInstance()
-            : Typecho_Widget_Helper_Empty::getInstance();
+                : Typecho_Widget_Helper_Empty::getInstance();
 
             /** 初始化组件 */
             $widget = new $className($requestObject, $responseObject, $params);
@@ -245,9 +246,7 @@ abstract class Typecho_Widget
      * @access public
      * @return void
      */
-    public function execute()
-    {
-    }
+    public function execute() {}
 
     /**
      * post事件触发
@@ -285,8 +284,11 @@ abstract class Typecho_Widget
     public function parse($format)
     {
         while ($this->next()) {
-            echo preg_replace_callback("/\{([_a-z0-9]+)\}/i", 
-                array($this, '__parseCallback'), $format);
+            echo preg_replace_callback(
+                "/\{([_a-z0-9]+)\}/i",
+                array($this, '__parseCallback'),
+                $format
+            );
         }
     }
 
@@ -300,7 +302,7 @@ abstract class Typecho_Widget
     {
         //将行数据按顺序置位
         $this->row = $value;
-        $this->length ++;
+        $this->length++;
 
         $this->stack[] = $value;
         return $value;
@@ -317,7 +319,7 @@ abstract class Typecho_Widget
         $args = func_get_args();
         $num = func_num_args();
         $split = $this->sequence % $num;
-        echo $args[(0 == $split ? $num : $split) -1];
+        echo $args[(0 == $split ? $num : $split) - 1];
     }
 
     /**
@@ -362,7 +364,7 @@ abstract class Typecho_Widget
         if ($this->stack) {
             $this->row = @$this->stack[key($this->stack)];
             next($this->stack);
-            $this->sequence ++;
+            $this->sequence++;
         }
 
         if (!$this->row) {
@@ -370,7 +372,7 @@ abstract class Typecho_Widget
             if ($this->stack) {
                 $this->row = $this->stack[key($this->stack)];
             }
-            
+
             $this->sequence = 0;
             return false;
         }
@@ -433,6 +435,22 @@ abstract class Typecho_Widget
     public function __set($name, $value)
     {
         $this->row[$name] = $value;
+    }
+
+    /**
+     * @return int
+     */
+    public function getSequence(): int
+    {
+        return $this->sequence;
+    }
+
+    /**
+     * @return int
+     */
+    public function getLength(): int
+    {
+        return $this->length;
     }
 
     /**
