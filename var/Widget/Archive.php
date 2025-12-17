@@ -1441,6 +1441,7 @@ class Widget_Archive extends Widget_Abstract_Contents
      * @param string $splitWord 分割字符
      * @param string $template 展现配置信息
      * @return void
+     * @throws Typecho_Widget_Exception
      */
     public function pageNav($prev = '&laquo;', $next = '&raquo;', $splitPage = 3, $splitWord = '...', $template = '')
     {
@@ -1454,23 +1455,36 @@ class Widget_Archive extends Widget_Abstract_Contents
             if (is_string($template)) {
                 parse_str($template, $config);
             } else {
-                $config = $template;
+                $config = $template ? $template : array();
             }
 
             $template = array_merge($default, $config);
-            
             $total = $this->getTotal();
-            $this->pluginHandle()->trigger($hasNav)->pageNav($this->_currentPage, $total, 
-                $this->parameter->pageSize, $prev, $next, $splitPage, $splitWord);
+            $query = Typecho_Router::url(
+                $this->parameter->type .
+                (false === strpos($this->parameter->type, '_page') ? '_page' : NULL),
+                $this->_pageRow,
+                $this->options->index
+            );
+
+            $this->pluginHandle()->trigger($hasNav)->pageNav(
+                $this->_currentPage,
+                $total,
+                $this->parameter->pageSize,
+                $prev,
+                $next,
+                $splitPage,
+                $splitWord,
+                $template,
+                $query);
 
             if (!$hasNav && $total > $this->parameter->pageSize) {
-                $query = Typecho_Router::url($this->parameter->type .
-                (false === strpos($this->parameter->type, '_page') ? '_page' : NULL),
-                $this->_pageRow, $this->options->index);
-
-                /** 使用盒状分页 */
-                $nav = new Typecho_Widget_Helper_PageNavigator_Box($total, 
-                    $this->_currentPage, $this->parameter->pageSize, $query);
+                $nav = new Typecho_Widget_Helper_PageNavigator_Box(
+                    $total,
+                    $this->_currentPage,
+                    $this->parameter->pageSize,
+                    $query
+                );
                 
                 echo '<' . $template['wrapTag'] . (empty($template['wrapClass']) 
                     ? '' : ' class="' . $template['wrapClass'] . '"') . '>';

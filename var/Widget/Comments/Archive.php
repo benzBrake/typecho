@@ -327,7 +327,7 @@ class Widget_Comments_Archive extends Widget_Abstract_Comments
      */
     public function pageNav($prev = '&laquo;', $next = '&raquo;', $splitPage = 3, $splitWord = '...', $template = '')
     {
-        if ($this->options->commentsPageBreak && $this->_total > $this->options->commentsPageSize) {
+        if ($this->options->commentsPageBreak) {
             $default = array(
                 'wrapTag'       =>  'ol',
                 'wrapClass'     =>  'page-navigator'
@@ -336,7 +336,7 @@ class Widget_Comments_Archive extends Widget_Abstract_Comments
             if (is_string($template)) {
                 parse_str($template, $config);
             } else {
-                $config = $template;
+                $config = $template ? $template : array();
             }
 
             $template = array_merge($default, $config);
@@ -346,16 +346,30 @@ class Widget_Comments_Archive extends Widget_Abstract_Comments
 
             $query = Typecho_Router::url('comment_page', $pageRow, $this->options->index);
 
-            /** 使用盒状分页 */
-            $nav = new Typecho_Widget_Helper_PageNavigator_Box($this->_total,
-                $this->_currentPage, $this->options->commentsPageSize, $query);
-            $nav->setPageHolder('commentPage');
-            $nav->setAnchor('comments');
-            
-            echo '<' . $template['wrapTag'] . (empty($template['wrapClass']) 
-                    ? '' : ' class="' . $template['wrapClass'] . '"') . '>';
-            $nav->render($prev, $next, $splitPage, $splitWord, $template);
-            echo '</' . $template['wrapTag'] . '>';
+            $this->pluginHandle()->trigger($hasNav)->pageNav(
+                $this->_currentPage,
+                $this->_total,
+                $this->options->commentsPageSize,
+                $prev,
+                $next,
+                $splitPage,
+                $splitWord,
+                $template,
+                $query
+            );
+
+            if (!$hasNav && $this->_total > $this->options->commentsPageSize) {
+                /** 使用盒状分页 */
+                $nav = new Typecho_Widget_Helper_PageNavigator_Box($this->_total,
+                    $this->_currentPage, $this->options->commentsPageSize, $query);
+                $nav->setPageHolder('commentPage');
+                $nav->setAnchor('comments');
+
+                echo '<' . $template['wrapTag'] . (empty($template['wrapClass'])
+                        ? '' : ' class="' . $template['wrapClass'] . '"') . '>';
+                $nav->render($prev, $next, $splitPage, $splitWord, $template);
+                echo '</' . $template['wrapTag'] . '>';
+            }
         }
     }
 
