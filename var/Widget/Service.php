@@ -211,29 +211,37 @@ class Widget_Service extends Widget_Abstract_Options implements Widget_Interface
         if (!$called) {
             $self = $this;
 
-            Typecho_Response::addCallback(function () use ($self) {
-                if (!empty($self->asyncRequests) && $client = Typecho_Http_Client::get()) {
-                    try {
-                        $client->setHeader('User-Agent', $this->options->generator)
-                            ->setTimeout(2)
-                            ->setData(array(
-                                'do'        =>  'async',
-                                'requests'  =>  Json::encode($self->asyncRequests),
-                                'token'     =>  Typecho_Common::timeToken($this->options->secret)
-                            ))
-                            ->setMethod(Typecho_Http_Client::METHOD_POST)
-                            ->send($this->getServiceUrl());
-
-                    } catch (Typecho_Http_Client_Exception $e) {
-                        return;
-                    }
-                }
-            });
+            // PHP 5.2.6 不支持闭包，使用回调方法替代
+            Typecho_Response::addCallback(array($this, '_sendAsyncRequests'));
 
             $called = true;
         }
 
         $this->asyncRequests[] = array($method, $params);
+    }
+
+    /**
+     * 发送异步请求的回调方法
+     * 用于替代闭包，兼容 PHP 5.2.6
+     */
+    public function _sendAsyncRequests()
+    {
+        if (!empty($this->asyncRequests) && $client = Typecho_Http_Client::get()) {
+            try {
+                $client->setHeader('User-Agent', $this->options->generator)
+                    ->setTimeout(2)
+                    ->setData(array(
+                        'do'        =>  'async',
+                        'requests'  =>  Json::encode($this->asyncRequests),
+                        'token'     =>  Typecho_Common::timeToken($this->options->secret)
+                    ))
+                    ->setMethod(Typecho_Http_Client::METHOD_POST)
+                    ->send($this->getServiceUrl());
+
+            } catch (Typecho_Http_Client_Exception $e) {
+                return;
+            }
+        }
     }
 
     /**

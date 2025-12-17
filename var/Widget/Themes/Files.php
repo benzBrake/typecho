@@ -54,9 +54,12 @@ class Widget_Themes_Files extends Typecho_Widget
             && is_dir($dir = $this->widget('Widget_Options')->themeFile($this->_currentTheme))
             && (!defined('__TYPECHO_THEME_WRITEABLE__') || __TYPECHO_THEME_WRITEABLE__)) {
 
-            $files = array_filter(Typecho_Compat::glob($dir . '/*'), function ($path) {
-                return preg_match("/\.(php|js|css|vbs)$/i", $path);
-            });
+            $files = array();
+            foreach (Typecho_Compat::glob($dir . '/*') as $path) {
+                if (preg_match("/\.(php|js|css|vbs)$/i", $path)) {
+                    $files[] = $path;
+                }
+            }
 
             $this->_currentFile = $this->request->get('file', 'index.php');
 

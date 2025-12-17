@@ -66,9 +66,19 @@ class Widget_Themes_List extends Typecho_Widget
                         $activated = $key;
                     }
 
-                    $screen = array_filter(Typecho_Compat::glob($theme . '/*'), function ($path) {
-                        return preg_match("/screenshot\.(jpg|png|gif|bmp|jpeg|webp|avif)$/i", $path);
-                    });
+                    $screen = array();
+                    $files = Typecho_Compat::glob($theme . '/*');
+
+                    foreach ($files as $path) {
+                        // 使用 pathinfo 获取文件扩展名
+                        $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+
+                        // 检查文件名是否以 'screenshot' 开头，并且扩展名是否在允许的列表中
+                        if (strpos(basename($path), 'screenshot.') === 0 &&
+                            in_array($extension, array('jpg', 'png', 'gif', 'bmp', 'jpeg', 'webp', 'avif'))) {
+                            $screen[] = $path;
+                        }
+                    }
 
                     if ($screen) {
                         $info['screen'] = $options->themeUrl(basename(current($screen)), $info['name']);
