@@ -728,7 +728,7 @@ class HyperDown
                     $this->setBlock($key);
                 }
             } else {
-                $this->startBlock('list', $key, [$space, $type, $tab]);
+                $this->startBlock('list', $key, array($space, $type, $tab));
             }
 
             return false;
@@ -1228,7 +1228,7 @@ class HyperDown
                             || ($prevBlock[3][0] == $nextBlock[3][0] && $prevBlock[3][1] == $nextBlock[3][1]))) {
                         // combine 3 blocks
                         $blocks[$key - 1] = array(
-                            $prevBlock[0],  $prevBlock[1],  $nextBlock[2], $prevBlock[3] ?? null
+                            $prevBlock[0],  $prevBlock[1],  $nextBlock[2], isset($prevBlock[3]) ? $prevBlock[3] : null
                         );
                         array_splice($blocks, $key, 2);
 
@@ -1420,7 +1420,7 @@ class HyperDown
                     }
                 }
 
-                $rows[] = [$matches[4]];
+                $rows[] = array($matches[4]);
                 $last = count($rows) - 1;
             } else {
                 $rows[$last][] = preg_replace("/^\s{" . ($tab + $space) . "}/", '', $line);

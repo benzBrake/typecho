@@ -206,7 +206,7 @@ Typecho_Cookie::set('__typecho_lang', $lang);
                     </div>
                 <?php else : ?>
                     <?php
-                    $db->query($db->update('table.options')->rows(['value' => 1])->where('name = ?', 'installed'));
+                    $db->query($db->update('table.options')->rows(array('value' => 1))->where('name = ?', 'installed'));
                     ?>
                 <h1 class="typecho-install-title"><?php _e('安装成功!'); ?></h1>
                 <div class="typecho-install-body">

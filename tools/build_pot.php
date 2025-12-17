@@ -1,6 +1,6 @@
 <?php
 
-$langs = [];
+$langs = array();
 
 /**
  * output lang
@@ -68,13 +68,13 @@ function get_msgid($value) {
 function get_pot($file) {
     $source = file_get_contents($file);
     $matched = null;
-    $plural = [];
+    $plural = array();
 
     foreach (token_get_all($source) as $token) {
         if (is_array($token)) {
             list ($type, $value) = $token;
 
-            if ($type == T_STRING && in_array($value, ['_t', '_e', '_n'])) {
+            if ($type == T_STRING && in_array($value, array('_t', '_e', '_n'))) {
                 $matched = $value;
             } else if ($type == T_CONSTANT_ENCAPSED_STRING && $matched) {
                 $key = md5($value);

@@ -74,7 +74,7 @@ class Widget_Upgrade extends Widget_Abstract_Options implements Widget_Interface
             }
 
             /** 更新版本号 */
-            $this->update(['value' => 'Typecho ' . $version],
+            $this->update(array('value' => 'Typecho ' . $version),
                 $this->db->sql()->where('name = ?', 'generator'));
 
             $this->destory('Widget_Options@' . $package);
