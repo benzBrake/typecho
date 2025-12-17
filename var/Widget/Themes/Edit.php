@@ -42,6 +42,8 @@ class Widget_Themes_Edit extends Widget_Abstract_Options implements Widget_Inter
             if (0 === strpos($this->options->frontPage, 'file:')) {
                 $this->update(array('value' => 'recent'), $this->db->sql()->where('name = ?', 'frontPage'));
             }
+
+            $this->options->themeUrl = rtrim($this->options->themeUrl('', $theme), '/');
             
             $configFile = $this->options->themeFile($theme, 'functions.php');
             
@@ -84,7 +86,7 @@ class Widget_Themes_Edit extends Widget_Abstract_Options implements Widget_Inter
     {
         $path = $this->options->themeFile($theme, $file);
 
-        if (file_exists($path) && is_writeable($path)
+        if (file_exists($path) && is_writeable($path) && !Typecho_Common::isAppEngine()
             && (!defined('__TYPECHO_THEME_WRITEABLE__') || __TYPECHO_THEME_WRITEABLE__)) {
             $handle = fopen($path, 'wb');
             if ($handle && fwrite($handle, $this->request->content)) {

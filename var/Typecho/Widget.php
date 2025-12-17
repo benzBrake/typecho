@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Typecho Blog Platform
  *
@@ -117,6 +116,41 @@ abstract class Typecho_Widget
     }
 
     /**
+     * 解析回调
+     * 
+     * @param array $matches 
+     * @access protected
+     * @return string
+     */
+    protected function __parseCallback($matches)
+    {
+        return $this->{$matches[1]};
+    }
+
+    /**
+     * execute function.
+     *
+     * @access public
+     * @return void
+     */
+    public function execute(){}
+
+    /**
+     * post事件触发
+     *
+     * @param boolean $condition 触发条件
+     * @return mixed
+     */
+    public function on($condition)
+    {
+        if ($condition) {
+            return $this;
+        } else {
+            return new Typecho_Widget_Helper_Empty();
+        }
+    }
+
+    /**
      * 获取对象插件句柄
      *
      * @access public
@@ -179,7 +213,7 @@ abstract class Typecho_Widget
 
             /** 初始化response */
             $responseObject = $enableResponse ? Typecho_Response::getInstance()
-                : Typecho_Widget_Helper_Empty::getInstance();
+            : Typecho_Widget_Helper_Empty::getInstance();
 
             /** 初始化组件 */
             $widget = new $className($requestObject, $responseObject, $params);
@@ -206,30 +240,6 @@ abstract class Typecho_Widget
     }
 
     /**
-     * execute function.
-     *
-     * @access public
-     * @return void
-     */
-    public function execute() {}
-
-    /**
-     * post事件触发
-     *
-     * @param boolean $condition 触发条件
-     *
-     * @return $this|Typecho_Widget_Helper_Empty
-     */
-    protected function on($condition)
-    {
-        if ($condition) {
-            return $this;
-        } else {
-            return new Typecho_Widget_Helper_Empty();
-        }
-    }
-
-    /**
      * 将类本身赋值
      *
      * @param string $variable 变量名
@@ -249,11 +259,8 @@ abstract class Typecho_Widget
     public function parse($format)
     {
         while ($this->next()) {
-            echo preg_replace_callback(
-                "/\{([_a-z0-9]+)\}/i",
-                array($this, '__parseCallback'),
-                $format
-            );
+            echo preg_replace_callback("/\{([_a-z0-9]+)\}/i", 
+                array($this, '__parseCallback'), $format);
         }
     }
 
@@ -267,7 +274,7 @@ abstract class Typecho_Widget
     {
         //将行数据按顺序置位
         $this->row = $value;
-        $this->length++;
+        $this->length ++;
 
         $this->stack[] = $value;
         return $value;
@@ -284,7 +291,29 @@ abstract class Typecho_Widget
         $args = func_get_args();
         $num = func_num_args();
         $split = $this->sequence % $num;
-        echo $args[(0 == $split ? $num : $split) - 1];
+        echo $args[(0 == $split ? $num : $split) -1];
+    }
+
+    /**
+     * 输出顺序值
+     *
+     * @access public
+     * @return void
+     */
+    public function sequence()
+    {
+        echo $this->sequence;
+    }
+
+    /**
+     * 输出数据长度
+     *
+     * @access public
+     * @return void
+     */
+    public function length()
+    {
+        echo $this->length;
     }
 
     /**
@@ -307,7 +336,7 @@ abstract class Typecho_Widget
         if ($this->stack) {
             $this->row = @$this->stack[key($this->stack)];
             next($this->stack);
-            $this->sequence++;
+            $this->sequence ++;
         }
 
         if (!$this->row) {
@@ -315,7 +344,7 @@ abstract class Typecho_Widget
             if ($this->stack) {
                 $this->row = $this->stack[key($this->stack)];
             }
-
+            
             $this->sequence = 0;
             return false;
         }
@@ -390,38 +419,5 @@ abstract class Typecho_Widget
     public function __isSet($name)
     {
         return isset($this->row[$name]);
-    }
-
-    /**
-     * 输出顺序值
-     *
-     * @return int
-     */
-    public function ___sequence()
-    {
-        return $this->sequence;
-    }
-
-    /**
-     * 输出数据长度
-     *
-     * @return int
-     */
-    public function ___length()
-    {
-        return $this->length;
-    }
-
-    /**
-     * 解析回调
-     *
-     * @param array $matches
-     *
-     * @access protected
-     * @return string
-     */
-    protected function __parseCallback(array $matches)
-    {
-        return $this->{$matches[1]};
     }
 }

@@ -26,7 +26,7 @@ class Widget_Themes_List extends Typecho_Widget
      */
     protected function getThemes()
     {
-        return glob(__TYPECHO_ROOT_DIR__ . __TYPECHO_THEME_DIR__ . '/*', GLOB_ONLYDIR);
+        return Typecho_Compat::glob(__TYPECHO_ROOT_DIR__ . __TYPECHO_THEME_DIR__ . '/*', GLOB_ONLYDIR);
     }
 
     /**
@@ -66,7 +66,7 @@ class Widget_Themes_List extends Typecho_Widget
                         $activated = $key;
                     }
 
-                    $screen = array_filter(glob($theme . '/*'), function ($path) {
+                    $screen = array_filter(Typecho_Compat::glob($theme . '/*'), function ($path) {
                         return preg_match("/screenshot\.(jpg|png|gif|bmp|jpeg|webp|avif)$/i", $path);
                     });
 

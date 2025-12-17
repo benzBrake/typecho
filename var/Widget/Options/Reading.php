@@ -80,7 +80,7 @@ class Widget_Options_Reading extends Widget_Options_Permalink
         }
 
         // 自定义文件列表
-        $files = glob($this->options->themeFile($this->options->theme, '*.php'));
+        $files = Typecho_Compat::glob($this->options->themeFile($this->options->theme, '*.php'));
         $filesSelect = '';
 
         foreach ($files as $file) {

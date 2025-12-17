@@ -30,7 +30,7 @@ class Widget_Options_General extends Widget_Abstract_Options implements Widget_I
     public static function getLangs()
     {
         $dir = defined('__TYPECHO_LANG_DIR__') ? __TYPECHO_LANG_DIR__ : __TYPECHO_ROOT_DIR__ . '/usr/langs';
-        $files = glob($dir . '/*.mo');
+        $files = Typecho_Compat::glob($dir . '/*.mo');
         $langs = array('zh_CN' => '简体中文');
 
         if (!empty($files)) {

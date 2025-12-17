@@ -1,5 +1,6 @@
 <?php
-if (!defined('__TYPECHO_ROOT_DIR__')) exit;
+if (!defined('__TYPECHO_ROOT_DIR__'))
+    exit;
 
 /**
  * Markdown解析
@@ -23,9 +24,7 @@ class Markdown
         if (empty($parser)) {
             $parser = new HyperDown();
 
-            $parser->hook('afterParseCode', function ($html) {
-                return preg_replace("/<code class=\"([_a-z0-9-]+)\">/i", "<code class=\"lang-\\1\">", $html);
-            });
+            $parser->hook('afterParseCode', array('Markdown', 'transerCodeClass'));
 
             $parser->enableHtml(true);
         }

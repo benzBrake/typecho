@@ -17,7 +17,8 @@ define('__TYPECHO_MB_SUPPORTED__', function_exists('mb_get_info') && function_ex
  * @param string $string 需要翻译的文字
  * @return string
  */
-function _t($string) {
+function _t($string)
+{
     if (func_num_args() <= 1) {
         return Typecho_I18n::translate($string);
     } else {
@@ -33,7 +34,8 @@ function _t($string) {
  * @param string $string 需要翻译并输出的文字
  * @return void
  */
-function _e() {
+function _e()
+{
     $args = func_get_args();
     echo call_user_func_array('_t', $args);
 }
@@ -46,7 +48,8 @@ function _e() {
  * @param integer $number 数字
  * @return string
  */
-function _n($single, $plural, $number) {
+function _n($single, $plural, $number)
+{
     return str_replace('%d', $number, Typecho_I18n::ngettext($single, $plural, $number));
 }
 
@@ -61,7 +64,7 @@ function _n($single, $plural, $number) {
 class Typecho_Common
 {
     /** 程序版本 */
-    const VERSION = '1.1.1';
+    const VERSION = '1.1/25.12.17';
 
     /**
      * 允许的属性
@@ -160,7 +163,7 @@ class Typecho_Common
 
         return '<' . $tag . implode('', $parsedAttrs) . '>';
     }
-    
+
     /**
      * 解析属性
      * 
@@ -177,11 +180,11 @@ class Typecho_Common
         $quote = '';
         $key = '';
         $value = '';
-        
-        for ($i = 0; $i < $len; $i ++) {
+
+        for ($i = 0; $i < $len; $i++) {
             if ('=' != $attrs[$i] && !ctype_space($attrs[$i]) && -1 == $pos) {
                 $key .= $attrs[$i];
-                
+
                 /** 最后一个 */
                 if ($i == $len - 1) {
                     if ('' != ($key = trim($key))) {
@@ -190,7 +193,7 @@ class Typecho_Common
                         $value = '';
                     }
                 }
-                
+
             } else if (ctype_space($attrs[$i]) && -1 == $pos) {
                 $pos = -2;
             } else if ('=' == $attrs[$i] && 0 > $pos) {
@@ -211,14 +214,14 @@ class Typecho_Common
                 if ('' != ($key = trim($key))) {
                     $result[$key] = '';
                 }
-                
+
                 $key = '';
                 $value = '';
                 $pos = -1;
                 $key .= $attrs[$i];
             }
         }
-        
+
         return $result;
     }
 
@@ -233,12 +236,12 @@ class Typecho_Common
         $systemPath = self::url($classFile, __TYPECHO_ROOT_DIR__ . '/var');
 
         if (file_exists($systemPath)) {
-            @include_once $systemPath;
+            include_once $systemPath;
         } else {
             $pluginPath = self::url($classFile, __TYPECHO_ROOT_DIR__ . __TYPECHO_PLUGIN_DIR__);
 
             if (file_exists($pluginPath)) {
-                @include_once $pluginPath;
+                include_once $pluginPath;
             }
         }
     }
@@ -347,7 +350,7 @@ class Typecho_Common
             require_once __TYPECHO_EXCEPTION_FILE__;
         } else {
             echo
-<<<EOF
+                <<<EOF
 <!DOCTYPE html>
 <html lang="en">
     <head>
@@ -412,8 +415,10 @@ EOF;
     {
         /** 获取所有include目录 */
         //增加安全目录检测 fix issue 106
-        $dirs = array_map('realpath', array_filter(explode(PATH_SEPARATOR, get_include_path()),
-        array('Typecho_Common', '__safePath')));
+        $dirs = array_map('realpath', array_filter(
+            explode(PATH_SEPARATOR, get_include_path()),
+            array('Typecho_Common', '__safePath')
+        ));
 
         $file = str_replace('_', '/', $className) . '.php';
 
@@ -435,6 +440,22 @@ EOF;
         }
 
         return false;
+    }
+
+    /**
+     * 检测是否在app engine上运行，屏蔽某些功能 
+     * 
+     * @static
+     * @access public
+     * @return boolean
+     */
+    public static function isAppEngine()
+    {
+        return !empty($_SERVER['HTTP_APPNAME'])                     // SAE
+            || !!getenv('HTTP_BAE_ENV_APPID')                       // BAE
+            || !!getenv('HTTP_BAE_LOGID')                           // BAE 3.0
+            || (isset($_SERVER['SERVER_SOFTWARE']) && strpos($_SERVER['SERVER_SOFTWARE'], 'Google App Engine') !== false) // GAE
+        ;
     }
 
     /**
@@ -481,12 +502,12 @@ EOF;
     public static function buildUrl($params)
     {
         return (isset($params['scheme']) ? $params['scheme'] . '://' : NULL)
-        . (isset($params['user']) ? $params['user'] . (isset($params['pass']) ? ':' . $params['pass'] : NULL) . '@' : NULL)
-        . (isset($params['host']) ? $params['host'] : NULL)
-        . (isset($params['port']) ? ':' . $params['port'] : NULL)
-        . (isset($params['path']) ? $params['path'] : NULL)
-        . (isset($params['query']) ? '?' . $params['query'] : NULL)
-        . (isset($params['fragment']) ? '#' . $params['fragment'] : NULL);
+            . (isset($params['user']) ? $params['user'] . (isset($params['pass']) ? ':' . $params['pass'] : NULL) . '@' : NULL)
+            . (isset($params['host']) ? $params['host'] : NULL)
+            . (isset($params['port']) ? ':' . $params['port'] : NULL)
+            . (isset($params['path']) ? $params['path'] : NULL)
+            . (isset($params['query']) ? '?' . $params['query'] : NULL)
+            . (isset($params['fragment']) ? '#' . $params['fragment'] : NULL);
     }
 
     /**
@@ -596,15 +617,18 @@ EOF;
             $normalizeTags = '<' . implode('><', array_map('strtolower', $tags[1])) . '>';
             $attributes = array_map('trim', $tags[2]);
             foreach ($attributes as $key => $val) {
-                $allowableAttributes[strtolower($tags[1][$key])] = 
+                $allowableAttributes[strtolower($tags[1][$key])] =
                     array_map('strtolower', array_keys(self::__parseAttrs($val)));
             }
         }
 
         self::$_allowableAttributes = $allowableAttributes;
         $html = strip_tags($html, $normalizeTags);
-        $html = preg_replace_callback("/<([_a-z0-9-]+)(\s+[^>]+)?>/is",
-            array('Typecho_Common', '__filterAttrs'), $html);
+        $html = preg_replace_callback(
+            "/<([_a-z0-9-]+)(\s+[^>]+)?>/is",
+            array('Typecho_Common', '__filterAttrs'),
+            $html
+        );
 
         return $html;
     }
@@ -656,60 +680,60 @@ EOF;
      */
     public static function removeXSS($val)
     {
-       // remove all non-printable characters. CR(0a) and LF(0b) and TAB(9) are allowed
-       // this prevents some character re-spacing such as <java\0script>
-       // note that you have to handle splits with \n, \r, and \t later since they *are* allowed in some inputs
-       $val = preg_replace('/([\x00-\x08]|[\x0b-\x0c]|[\x0e-\x19])/', '', $val);
+        // remove all non-printable characters. CR(0a) and LF(0b) and TAB(9) are allowed
+        // this prevents some character re-spacing such as <java\0script>
+        // note that you have to handle splits with \n, \r, and \t later since they *are* allowed in some inputs
+        $val = preg_replace('/([\x00-\x08]|[\x0b-\x0c]|[\x0e-\x19])/', '', $val);
 
-       // straight replacements, the user should never need these since they're normal characters
-       // this prevents like <IMG SRC=&#X40&#X61&#X76&#X61&#X73&#X63&#X72&#X69&#X70&#X74&#X3A&#X61&#X6C&#X65&#X72&#X74&#X28&#X27&#X58&#X53&#X53&#X27&#X29>
-       $search = 'abcdefghijklmnopqrstuvwxyz';
-       $search .= 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-       $search .= '1234567890!@#$%^&*()';
-       $search .= '~`";:?+/={}[]-_|\'\\';
+        // straight replacements, the user should never need these since they're normal characters
+        // this prevents like <IMG SRC=&#X40&#X61&#X76&#X61&#X73&#X63&#X72&#X69&#X70&#X74&#X3A&#X61&#X6C&#X65&#X72&#X74&#X28&#X27&#X58&#X53&#X53&#X27&#X29>
+        $search = 'abcdefghijklmnopqrstuvwxyz';
+        $search .= 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $search .= '1234567890!@#$%^&*()';
+        $search .= '~`";:?+/={}[]-_|\'\\';
 
-       for ($i = 0; $i < strlen($search); $i++) {
-          // ;? matches the ;, which is optional
-          // 0{0,7} matches any padded zeros, which are optional and go up to 8 chars
+        for ($i = 0; $i < strlen($search); $i++) {
+            // ;? matches the ;, which is optional
+            // 0{0,7} matches any padded zeros, which are optional and go up to 8 chars
 
-          // &#x0040 @ search for the hex values
-          $val = preg_replace('/(&#[xX]0{0,8}'.dechex(ord($search[$i])).';?)/i', $search[$i], $val); // with a ;
-          // &#00064 @ 0{0,7} matches '0' zero to seven times
-          $val = preg_replace('/(&#0{0,8}'.ord($search[$i]).';?)/', $search[$i], $val); // with a ;
-       }
+            // &#x0040 @ search for the hex values
+            $val = preg_replace('/(&#[xX]0{0,8}' . dechex(ord($search[$i])) . ';?)/i', $search[$i], $val); // with a ;
+            // &#00064 @ 0{0,7} matches '0' zero to seven times
+            $val = preg_replace('/(&#0{0,8}' . ord($search[$i]) . ';?)/', $search[$i], $val); // with a ;
+        }
 
-       // now the only remaining whitespace attacks are \t, \n, and \r
-       $ra1 = Array('javascript', 'vbscript', 'expression', 'applet', 'meta', 'xml', 'blink', 'link', 'style', 'script', 'embed', 'object', 'iframe', 'frame', 'frameset', 'ilayer', 'layer', 'bgsound', 'title', 'base');
-       $ra2 = Array('onabort', 'onactivate', 'onafterprint', 'onafterupdate', 'onbeforeactivate', 'onbeforecopy', 'onbeforecut', 'onbeforedeactivate', 'onbeforeeditfocus', 'onbeforepaste', 'onbeforeprint', 'onbeforeunload', 'onbeforeupdate', 'onblur', 'onbounce', 'oncellchange', 'onchange', 'onclick', 'oncontextmenu', 'oncontrolselect', 'oncopy', 'oncut', 'ondataavailable', 'ondatasetchanged', 'ondatasetcomplete', 'ondblclick', 'ondeactivate', 'ondrag', 'ondragend', 'ondragenter', 'ondragleave', 'ondragover', 'ondragstart', 'ondrop', 'onerror', 'onerrorupdate', 'onfilterchange', 'onfinish', 'onfocus', 'onfocusin', 'onfocusout', 'onhelp', 'onkeydown', 'onkeypress', 'onkeyup', 'onlayoutcomplete', 'onload', 'onlosecapture', 'onmousedown', 'onmouseenter', 'onmouseleave', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'onmousewheel', 'onmove', 'onmoveend', 'onmovestart', 'onpaste', 'onpropertychange', 'onreadystatechange', 'onreset', 'onresize', 'onresizeend', 'onresizestart', 'onrowenter', 'onrowexit', 'onrowsdelete', 'onrowsinserted', 'onscroll', 'onselect', 'onselectionchange', 'onselectstart', 'onstart', 'onstop', 'onsubmit', 'onunload');
-       $ra = array_merge($ra1, $ra2);
+        // now the only remaining whitespace attacks are \t, \n, and \r
+        $ra1 = array('javascript', 'vbscript', 'expression', 'applet', 'meta', 'xml', 'blink', 'link', 'style', 'script', 'embed', 'object', 'iframe', 'frame', 'frameset', 'ilayer', 'layer', 'bgsound', 'title', 'base');
+        $ra2 = array('onabort', 'onactivate', 'onafterprint', 'onafterupdate', 'onbeforeactivate', 'onbeforecopy', 'onbeforecut', 'onbeforedeactivate', 'onbeforeeditfocus', 'onbeforepaste', 'onbeforeprint', 'onbeforeunload', 'onbeforeupdate', 'onblur', 'onbounce', 'oncellchange', 'onchange', 'onclick', 'oncontextmenu', 'oncontrolselect', 'oncopy', 'oncut', 'ondataavailable', 'ondatasetchanged', 'ondatasetcomplete', 'ondblclick', 'ondeactivate', 'ondrag', 'ondragend', 'ondragenter', 'ondragleave', 'ondragover', 'ondragstart', 'ondrop', 'onerror', 'onerrorupdate', 'onfilterchange', 'onfinish', 'onfocus', 'onfocusin', 'onfocusout', 'onhelp', 'onkeydown', 'onkeypress', 'onkeyup', 'onlayoutcomplete', 'onload', 'onlosecapture', 'onmousedown', 'onmouseenter', 'onmouseleave', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'onmousewheel', 'onmove', 'onmoveend', 'onmovestart', 'onpaste', 'onpropertychange', 'onreadystatechange', 'onreset', 'onresize', 'onresizeend', 'onresizestart', 'onrowenter', 'onrowexit', 'onrowsdelete', 'onrowsinserted', 'onscroll', 'onselect', 'onselectionchange', 'onselectstart', 'onstart', 'onstop', 'onsubmit', 'onunload');
+        $ra = array_merge($ra1, $ra2);
 
-       $found = true; // keep replacing as long as the previous round replaced something
-       while ($found == true) {
-          $val_before = $val;
-          for ($i = 0; $i < sizeof($ra); $i++) {
-             $pattern = '/';
-             for ($j = 0; $j < strlen($ra[$i]); $j++) {
-                if ($j > 0) {
-                   $pattern .= '(';
-                   $pattern .= '(&#[xX]0{0,8}([9ab]);)';
-                   $pattern .= '|';
-                   $pattern .= '|(&#0{0,8}([9|10|13]);)';
-                   $pattern .= ')*';
+        $found = true; // keep replacing as long as the previous round replaced something
+        while ($found == true) {
+            $val_before = $val;
+            for ($i = 0; $i < sizeof($ra); $i++) {
+                $pattern = '/';
+                for ($j = 0; $j < strlen($ra[$i]); $j++) {
+                    if ($j > 0) {
+                        $pattern .= '(';
+                        $pattern .= '(&#[xX]0{0,8}([9ab]);)';
+                        $pattern .= '|';
+                        $pattern .= '|(&#0{0,8}([9|10|13]);)';
+                        $pattern .= ')*';
+                    }
+                    $pattern .= $ra[$i][$j];
                 }
-                $pattern .= $ra[$i][$j];
-             }
-             $pattern .= '/i';
-             $replacement = substr($ra[$i], 0, 2).'<x>'.substr($ra[$i], 2); // add in <> to nerf the tag
-             $val = preg_replace($pattern, $replacement, $val); // filter out the hex tags
+                $pattern .= '/i';
+                $replacement = substr($ra[$i], 0, 2) . '<x>' . substr($ra[$i], 2); // add in <> to nerf the tag
+                $val = preg_replace($pattern, $replacement, $val); // filter out the hex tags
 
-             if ($val_before == $val) {
-                // no replacements were made, so exit the loop
-                $found = false;
-             }
-          }
-       }
+                if ($val_before == $val) {
+                    // no replacements were made, so exit the loop
+                    $found = false;
+                }
+            }
+        }
 
-       return $val;
+        return $val;
     }
 
     /**
@@ -742,7 +766,7 @@ EOF;
                 $str = substr($str, $start, $tLength);
             }
         }
-        
+
         return $length < $iLength ? ($str . $trim) : $str;
     }
 
@@ -758,7 +782,7 @@ EOF;
         if (__TYPECHO_MB_SUPPORTED__) {
             return mb_strlen($str, self::$charset);
         } else {
-            return 'UTF-8' == strtoupper(self::$charset) 
+            return 'UTF-8' == strtoupper(self::$charset)
                 ? strlen(utf8_decode($str)) : strlen($str);
         }
     }
@@ -816,7 +840,7 @@ EOF;
         if (!strlen($str)) {
             return $default;
         }
-        
+
         if (__TYPECHO_MB_SUPPORTED__) {
             mb_regex_encoding(self::$charset);
             mb_ereg_search_init($str, "[\w" . preg_quote('_-') . "]+");
@@ -828,7 +852,7 @@ EOF;
                 $pos = 0;
                 do {
                     $return .= ($pos > 0 ? '-' : '') . $regs[0];
-                    $pos ++;
+                    $pos++;
                 } while ($regs = mb_ereg_search_regs());
             }
 
@@ -897,7 +921,7 @@ EOF;
             $asc = ord($string[$pos]);
             $last = ($last * ord($salt[($last % $asc) % 9]) + $asc) % 95 + 32;
             $hash .= chr($last);
-            $pos ++;
+            $pos++;
         }
 
         return '$T$' . $salt . md5($hash);
@@ -945,7 +969,7 @@ EOF;
         $now = time();
         $from = $now - $timeout;
 
-        for ($i = $now; $i >= $from; $i --) {
+        for ($i = $now; $i >= $from; $i--) {
             if (sha1($secret . '&' . $i) == $token) {
                 return true;
             }
@@ -1131,7 +1155,7 @@ EOF;
             return false;
         }
 
-        list ($type, $headerLen, $bodyLen) = array_values(unpack($version == 'FILE' ? 'v3' : 'v1type/v1headerLen/V1bodyLen', $meta));
+        list($type, $headerLen, $bodyLen) = array_values(unpack($version == 'FILE' ? 'v3' : 'v1type/v1headerLen/V1bodyLen', $meta));
 
         $header = @fread($fp, $headerLen);
         $offset += $headerLen;
@@ -1141,9 +1165,16 @@ EOF;
         }
 
         if ('FILE' == $version) {
-            $bodyLen = array_reduce(json_decode($header, true), function ($carry, $len) {
-                return NULL === $len ? $carry : $carry + $len;
-            }, 0);
+            $bodyLen = 0;
+            $lens = json_decode($header, true);
+
+            if (is_array($lens)) {
+                foreach ($lens as $len) {
+                    if ($len !== NULL) {
+                        $bodyLen += $len;
+                    }
+                }
+            }
         }
 
         $body = @fread($fp, $bodyLen);
@@ -1204,7 +1235,7 @@ EOF;
             $long = ip2long($address);
 
             foreach ($privateNetworks as $network) {
-                list ($from, $to) = explode('|', $network);
+                list($from, $to) = explode('|', $network);
 
                 if ($long >= ip2long($from) && $long <= ip2long($to)) {
                     return false;
@@ -1249,319 +1280,319 @@ EOF;
         }
 
         $mimeTypes = array(
-          'ez' => 'application/andrew-inset',
-          'csm' => 'application/cu-seeme',
-          'cu' => 'application/cu-seeme',
-          'tsp' => 'application/dsptype',
-          'spl' => 'application/x-futuresplash',
-          'hta' => 'application/hta',
-          'cpt' => 'image/x-corelphotopaint',
-          'hqx' => 'application/mac-binhex40',
-          'nb' => 'application/mathematica',
-          'mdb' => 'application/msaccess',
-          'doc' => 'application/msword',
-          'dot' => 'application/msword',
-          'bin' => 'application/octet-stream',
-          'oda' => 'application/oda',
-          'ogg' => 'application/ogg',
-          'oga' => 'audio/ogg',
-          'ogv' => 'video/ogg',
-          'prf' => 'application/pics-rules',
-          'key' => 'application/pgp-keys',
-          'pdf' => 'application/pdf',
-          'pgp' => 'application/pgp-signature',
-          'ps' => 'application/postscript',
-          'ai' => 'application/postscript',
-          'eps' => 'application/postscript',
-          'rss' => 'application/rss+xml',
-          'rtf' => 'text/rtf',
-          'smi' => 'application/smil',
-          'smil' => 'application/smil',
-          'wp5' => 'application/wordperfect5.1',
-          'xht' => 'application/xhtml+xml',
-          'xhtml' => 'application/xhtml+xml',
-          'zip' => 'application/zip',
-          'cdy' => 'application/vnd.cinderella',
-          'mif' => 'application/x-mif',
-          'xls' => 'application/vnd.ms-excel',
-          'xlb' => 'application/vnd.ms-excel',
-          'cat' => 'application/vnd.ms-pki.seccat',
-          'stl' => 'application/vnd.ms-pki.stl',
-          'ppt' => 'application/vnd.ms-powerpoint',
-          'pps' => 'application/vnd.ms-powerpoint',
-          'pot' => 'application/vnd.ms-powerpoint',
-          'sdc' => 'application/vnd.stardivision.calc',
-          'sda' => 'application/vnd.stardivision.draw',
-          'sdd' => 'application/vnd.stardivision.impress',
-          'sdp' => 'application/vnd.stardivision.impress',
-          'smf' => 'application/vnd.stardivision.math',
-          'sdw' => 'application/vnd.stardivision.writer',
-          'vor' => 'application/vnd.stardivision.writer',
-          'sgl' => 'application/vnd.stardivision.writer-global',
-          'sxc' => 'application/vnd.sun.xml.calc',
-          'stc' => 'application/vnd.sun.xml.calc.template',
-          'sxd' => 'application/vnd.sun.xml.draw',
-          'std' => 'application/vnd.sun.xml.draw.template',
-          'sxi' => 'application/vnd.sun.xml.impress',
-          'sti' => 'application/vnd.sun.xml.impress.template',
-          'sxm' => 'application/vnd.sun.xml.math',
-          'sxw' => 'application/vnd.sun.xml.writer',
-          'sxg' => 'application/vnd.sun.xml.writer.global',
-          'stw' => 'application/vnd.sun.xml.writer.template',
-          'sis' => 'application/vnd.symbian.install',
-          'wbxml' => 'application/vnd.wap.wbxml',
-          'wmlc' => 'application/vnd.wap.wmlc',
-          'wmlsc' => 'application/vnd.wap.wmlscriptc',
-          'wk' => 'application/x-123',
-          'dmg' => 'application/x-apple-diskimage',
-          'bcpio' => 'application/x-bcpio',
-          'torrent' => 'application/x-bittorrent',
-          'cdf' => 'application/x-cdf',
-          'vcd' => 'application/x-cdlink',
-          'pgn' => 'application/x-chess-pgn',
-          'cpio' => 'application/x-cpio',
-          'csh' => 'text/x-csh',
-          'deb' => 'application/x-debian-package',
-          'dcr' => 'application/x-director',
-          'dir' => 'application/x-director',
-          'dxr' => 'application/x-director',
-          'wad' => 'application/x-doom',
-          'dms' => 'application/x-dms',
-          'dvi' => 'application/x-dvi',
-          'pfa' => 'application/x-font',
-          'pfb' => 'application/x-font',
-          'gsf' => 'application/x-font',
-          'pcf' => 'application/x-font',
-          'pcf.Z' => 'application/x-font',
-          'gnumeric' => 'application/x-gnumeric',
-          'sgf' => 'application/x-go-sgf',
-          'gcf' => 'application/x-graphing-calculator',
-          'gtar' => 'application/x-gtar',
-          'tgz' => 'application/x-gtar',
-          'taz' => 'application/x-gtar',
-          'gz'  => 'application/x-gtar',
-          'hdf' => 'application/x-hdf',
-          'phtml' => 'application/x-httpd-php',
-          'pht' => 'application/x-httpd-php',
-          'php' => 'application/x-httpd-php',
-          'phps' => 'application/x-httpd-php-source',
-          'php3' => 'application/x-httpd-php3',
-          'php3p' => 'application/x-httpd-php3-preprocessed',
-          'php4' => 'application/x-httpd-php4',
-          'ica' => 'application/x-ica',
-          'ins' => 'application/x-internet-signup',
-          'isp' => 'application/x-internet-signup',
-          'iii' => 'application/x-iphone',
-          'jar' => 'application/x-java-archive',
-          'jnlp' => 'application/x-java-jnlp-file',
-          'ser' => 'application/x-java-serialized-object',
-          'class' => 'application/x-java-vm',
-          'js' => 'application/x-javascript',
-          'chrt' => 'application/x-kchart',
-          'kil' => 'application/x-killustrator',
-          'kpr' => 'application/x-kpresenter',
-          'kpt' => 'application/x-kpresenter',
-          'skp' => 'application/x-koan',
-          'skd' => 'application/x-koan',
-          'skt' => 'application/x-koan',
-          'skm' => 'application/x-koan',
-          'ksp' => 'application/x-kspread',
-          'kwd' => 'application/x-kword',
-          'kwt' => 'application/x-kword',
-          'latex' => 'application/x-latex',
-          'lha' => 'application/x-lha',
-          'lzh' => 'application/x-lzh',
-          'lzx' => 'application/x-lzx',
-          'frm' => 'application/x-maker',
-          'maker' => 'application/x-maker',
-          'frame' => 'application/x-maker',
-          'fm' => 'application/x-maker',
-          'fb' => 'application/x-maker',
-          'book' => 'application/x-maker',
-          'fbdoc' => 'application/x-maker',
-          'wmz' => 'application/x-ms-wmz',
-          'wmd' => 'application/x-ms-wmd',
-          'com' => 'application/x-msdos-program',
-          'exe' => 'application/x-msdos-program',
-          'bat' => 'application/x-msdos-program',
-          'dll' => 'application/x-msdos-program',
-          'msi' => 'application/x-msi',
-          'nc' => 'application/x-netcdf',
-          'pac' => 'application/x-ns-proxy-autoconfig',
-          'nwc' => 'application/x-nwc',
-          'o' => 'application/x-object',
-          'oza' => 'application/x-oz-application',
-          'pl' => 'application/x-perl',
-          'pm' => 'application/x-perl',
-          'p7r' => 'application/x-pkcs7-certreqresp',
-          'crl' => 'application/x-pkcs7-crl',
-          'qtl' => 'application/x-quicktimeplayer',
-          'rpm' => 'audio/x-pn-realaudio-plugin',
-          'shar' => 'application/x-shar',
-          'swf' => 'application/x-shockwave-flash',
-          'swfl' => 'application/x-shockwave-flash',
-          'sh' => 'text/x-sh',
-          'sit' => 'application/x-stuffit',
-          'sv4cpio' => 'application/x-sv4cpio',
-          'sv4crc' => 'application/x-sv4crc',
-          'tar' => 'application/x-tar',
-          'tcl' => 'text/x-tcl',
-          'tex' => 'text/x-tex',
-          'gf' => 'application/x-tex-gf',
-          'pk' => 'application/x-tex-pk',
-          'texinfo' => 'application/x-texinfo',
-          'texi' => 'application/x-texinfo',
-          '~' => 'application/x-trash',
-          '%' => 'application/x-trash',
-          'bak' => 'application/x-trash',
-          'old' => 'application/x-trash',
-          'sik' => 'application/x-trash',
-          't' => 'application/x-troff',
-          'tr' => 'application/x-troff',
-          'roff' => 'application/x-troff',
-          'man' => 'application/x-troff-man',
-          'me' => 'application/x-troff-me',
-          'ms' => 'application/x-troff-ms',
-          'ustar' => 'application/x-ustar',
-          'src' => 'application/x-wais-source',
-          'wz' => 'application/x-wingz',
-          'crt' => 'application/x-x509-ca-cert',
-          'fig' => 'application/x-xfig',
-          'au' => 'audio/basic',
-          'snd' => 'audio/basic',
-          'mid' => 'audio/midi',
-          'midi' => 'audio/midi',
-          'kar' => 'audio/midi',
-          'mpga' => 'audio/mpeg',
-          'mpega' => 'audio/mpeg',
-          'mp2' => 'audio/mpeg',
-          'mp3' => 'audio/mpeg',
-          'mp4' => 'video/mp4',
-          'm3u' => 'audio/x-mpegurl',
-          'sid' => 'audio/prs.sid',
-          'aif' => 'audio/x-aiff',
-          'aiff' => 'audio/x-aiff',
-          'aifc' => 'audio/x-aiff',
-          'gsm' => 'audio/x-gsm',
-          'wma' => 'audio/x-ms-wma',
-          'wax' => 'audio/x-ms-wax',
-          'ra' => 'audio/x-realaudio',
-          'rm' => 'audio/x-pn-realaudio',
-          'ram' => 'audio/x-pn-realaudio',
-          'pls' => 'audio/x-scpls',
-          'sd2' => 'audio/x-sd2',
-          'wav' => 'audio/x-wav',
-          'pdb' => 'chemical/x-pdb',
-          'xyz' => 'chemical/x-xyz',
-          'bmp' => 'image/x-ms-bmp',
-          'gif' => 'image/gif',
-          'ief' => 'image/ief',
-          'jpeg' => 'image/jpeg',
-          'jpg' => 'image/jpeg',
-          'jpe' => 'image/jpeg',
-          'pcx' => 'image/pcx',
-          'png' => 'image/png',
-          'svg' => 'image/svg+xml',
-          'svgz' => 'image/svg+xml',
-          'tiff' => 'image/tiff',
-          'tif' => 'image/tiff',
-          'wbmp' => 'image/vnd.wap.wbmp',
-          'ras' => 'image/x-cmu-raster',
-          'cdr' => 'image/x-coreldraw',
-          'pat' => 'image/x-coreldrawpattern',
-          'cdt' => 'image/x-coreldrawtemplate',
-          'djvu' => 'image/x-djvu',
-          'djv' => 'image/x-djvu',
-          'ico' => 'image/x-icon',
-          'art' => 'image/x-jg',
-          'jng' => 'image/x-jng',
-          'psd' => 'image/x-photoshop',
-          'pnm' => 'image/x-portable-anymap',
-          'pbm' => 'image/x-portable-bitmap',
-          'pgm' => 'image/x-portable-graymap',
-          'ppm' => 'image/x-portable-pixmap',
-          'rgb' => 'image/x-rgb',
-          'xbm' => 'image/x-xbitmap',
-          'xpm' => 'image/x-xpixmap',
-          'xwd' => 'image/x-xwindowdump',
-          'igs' => 'model/iges',
-          'iges' => 'model/iges',
-          'msh' => 'model/mesh',
-          'mesh' => 'model/mesh',
-          'silo' => 'model/mesh',
-          'wrl' => 'x-world/x-vrml',
-          'vrml' => 'x-world/x-vrml',
-          'csv' => 'text/comma-separated-values',
-          'css' => 'text/css',
-          '323' => 'text/h323',
-          'htm' => 'text/html',
-          'html' => 'text/html',
-          'uls' => 'text/iuls',
-          'mml' => 'text/mathml',
-          'asc' => 'text/plain',
-          'txt' => 'text/plain',
-          'text' => 'text/plain',
-          'diff' => 'text/plain',
-          'rtx' => 'text/richtext',
-          'sct' => 'text/scriptlet',
-          'wsc' => 'text/scriptlet',
-          'tm' => 'text/texmacs',
-          'ts' => 'text/texmacs',
-          'tsv' => 'text/tab-separated-values',
-          'jad' => 'text/vnd.sun.j2me.app-descriptor',
-          'wml' => 'text/vnd.wap.wml',
-          'wmls' => 'text/vnd.wap.wmlscript',
-          'xml' => 'text/xml',
-          'xsl' => 'text/xml',
-          'h++' => 'text/x-c++hdr',
-          'hpp' => 'text/x-c++hdr',
-          'hxx' => 'text/x-c++hdr',
-          'hh' => 'text/x-c++hdr',
-          'c++' => 'text/x-c++src',
-          'cpp' => 'text/x-c++src',
-          'cxx' => 'text/x-c++src',
-          'cc' => 'text/x-c++src',
-          'h' => 'text/x-chdr',
-          'c' => 'text/x-csrc',
-          'java' => 'text/x-java',
-          'moc' => 'text/x-moc',
-          'p' => 'text/x-pascal',
-          'pas' => 'text/x-pascal',
-          '***' => 'text/x-pcs-***',
-          'shtml' => 'text/x-server-parsed-html',
-          'etx' => 'text/x-setext',
-          'tk' => 'text/x-tcl',
-          'ltx' => 'text/x-tex',
-          'sty' => 'text/x-tex',
-          'cls' => 'text/x-tex',
-          'vcs' => 'text/x-vcalendar',
-          'vcf' => 'text/x-vcard',
-          'dl' => 'video/dl',
-          'fli' => 'video/fli',
-          'gl' => 'video/gl',
-          'mpeg' => 'video/mpeg',
-          'mpg' => 'video/mpeg',
-          'mpe' => 'video/mpeg',
-          'qt' => 'video/quicktime',
-          'mov' => 'video/quicktime',
-          'mxu' => 'video/vnd.mpegurl',
-          'dif' => 'video/x-dv',
-          'dv' => 'video/x-dv',
-          'lsf' => 'video/x-la-asf',
-          'lsx' => 'video/x-la-asf',
-          'mng' => 'video/x-mng',
-          'asf' => 'video/x-ms-asf',
-          'asx' => 'video/x-ms-asf',
-          'wm' => 'video/x-ms-wm',
-          'wmv' => 'video/x-ms-wmv',
-          'wmx' => 'video/x-ms-wmx',
-          'wvx' => 'video/x-ms-wvx',
-          'avi' => 'video/x-msvideo',
-          'movie' => 'video/x-sgi-movie',
-          'ice' => 'x-conference/x-cooltalk',
-          'vrm' => 'x-world/x-vrml',
-          'rar' => 'application/x-rar-compressed',
-          'cab' => 'application/vnd.ms-cab-compressed'
+            'ez' => 'application/andrew-inset',
+            'csm' => 'application/cu-seeme',
+            'cu' => 'application/cu-seeme',
+            'tsp' => 'application/dsptype',
+            'spl' => 'application/x-futuresplash',
+            'hta' => 'application/hta',
+            'cpt' => 'image/x-corelphotopaint',
+            'hqx' => 'application/mac-binhex40',
+            'nb' => 'application/mathematica',
+            'mdb' => 'application/msaccess',
+            'doc' => 'application/msword',
+            'dot' => 'application/msword',
+            'bin' => 'application/octet-stream',
+            'oda' => 'application/oda',
+            'ogg' => 'application/ogg',
+            'oga' => 'audio/ogg',
+            'ogv' => 'video/ogg',
+            'prf' => 'application/pics-rules',
+            'key' => 'application/pgp-keys',
+            'pdf' => 'application/pdf',
+            'pgp' => 'application/pgp-signature',
+            'ps' => 'application/postscript',
+            'ai' => 'application/postscript',
+            'eps' => 'application/postscript',
+            'rss' => 'application/rss+xml',
+            'rtf' => 'text/rtf',
+            'smi' => 'application/smil',
+            'smil' => 'application/smil',
+            'wp5' => 'application/wordperfect5.1',
+            'xht' => 'application/xhtml+xml',
+            'xhtml' => 'application/xhtml+xml',
+            'zip' => 'application/zip',
+            'cdy' => 'application/vnd.cinderella',
+            'mif' => 'application/x-mif',
+            'xls' => 'application/vnd.ms-excel',
+            'xlb' => 'application/vnd.ms-excel',
+            'cat' => 'application/vnd.ms-pki.seccat',
+            'stl' => 'application/vnd.ms-pki.stl',
+            'ppt' => 'application/vnd.ms-powerpoint',
+            'pps' => 'application/vnd.ms-powerpoint',
+            'pot' => 'application/vnd.ms-powerpoint',
+            'sdc' => 'application/vnd.stardivision.calc',
+            'sda' => 'application/vnd.stardivision.draw',
+            'sdd' => 'application/vnd.stardivision.impress',
+            'sdp' => 'application/vnd.stardivision.impress',
+            'smf' => 'application/vnd.stardivision.math',
+            'sdw' => 'application/vnd.stardivision.writer',
+            'vor' => 'application/vnd.stardivision.writer',
+            'sgl' => 'application/vnd.stardivision.writer-global',
+            'sxc' => 'application/vnd.sun.xml.calc',
+            'stc' => 'application/vnd.sun.xml.calc.template',
+            'sxd' => 'application/vnd.sun.xml.draw',
+            'std' => 'application/vnd.sun.xml.draw.template',
+            'sxi' => 'application/vnd.sun.xml.impress',
+            'sti' => 'application/vnd.sun.xml.impress.template',
+            'sxm' => 'application/vnd.sun.xml.math',
+            'sxw' => 'application/vnd.sun.xml.writer',
+            'sxg' => 'application/vnd.sun.xml.writer.global',
+            'stw' => 'application/vnd.sun.xml.writer.template',
+            'sis' => 'application/vnd.symbian.install',
+            'wbxml' => 'application/vnd.wap.wbxml',
+            'wmlc' => 'application/vnd.wap.wmlc',
+            'wmlsc' => 'application/vnd.wap.wmlscriptc',
+            'wk' => 'application/x-123',
+            'dmg' => 'application/x-apple-diskimage',
+            'bcpio' => 'application/x-bcpio',
+            'torrent' => 'application/x-bittorrent',
+            'cdf' => 'application/x-cdf',
+            'vcd' => 'application/x-cdlink',
+            'pgn' => 'application/x-chess-pgn',
+            'cpio' => 'application/x-cpio',
+            'csh' => 'text/x-csh',
+            'deb' => 'application/x-debian-package',
+            'dcr' => 'application/x-director',
+            'dir' => 'application/x-director',
+            'dxr' => 'application/x-director',
+            'wad' => 'application/x-doom',
+            'dms' => 'application/x-dms',
+            'dvi' => 'application/x-dvi',
+            'pfa' => 'application/x-font',
+            'pfb' => 'application/x-font',
+            'gsf' => 'application/x-font',
+            'pcf' => 'application/x-font',
+            'pcf.Z' => 'application/x-font',
+            'gnumeric' => 'application/x-gnumeric',
+            'sgf' => 'application/x-go-sgf',
+            'gcf' => 'application/x-graphing-calculator',
+            'gtar' => 'application/x-gtar',
+            'tgz' => 'application/x-gtar',
+            'taz' => 'application/x-gtar',
+            'gz' => 'application/x-gtar',
+            'hdf' => 'application/x-hdf',
+            'phtml' => 'application/x-httpd-php',
+            'pht' => 'application/x-httpd-php',
+            'php' => 'application/x-httpd-php',
+            'phps' => 'application/x-httpd-php-source',
+            'php3' => 'application/x-httpd-php3',
+            'php3p' => 'application/x-httpd-php3-preprocessed',
+            'php4' => 'application/x-httpd-php4',
+            'ica' => 'application/x-ica',
+            'ins' => 'application/x-internet-signup',
+            'isp' => 'application/x-internet-signup',
+            'iii' => 'application/x-iphone',
+            'jar' => 'application/x-java-archive',
+            'jnlp' => 'application/x-java-jnlp-file',
+            'ser' => 'application/x-java-serialized-object',
+            'class' => 'application/x-java-vm',
+            'js' => 'application/x-javascript',
+            'chrt' => 'application/x-kchart',
+            'kil' => 'application/x-killustrator',
+            'kpr' => 'application/x-kpresenter',
+            'kpt' => 'application/x-kpresenter',
+            'skp' => 'application/x-koan',
+            'skd' => 'application/x-koan',
+            'skt' => 'application/x-koan',
+            'skm' => 'application/x-koan',
+            'ksp' => 'application/x-kspread',
+            'kwd' => 'application/x-kword',
+            'kwt' => 'application/x-kword',
+            'latex' => 'application/x-latex',
+            'lha' => 'application/x-lha',
+            'lzh' => 'application/x-lzh',
+            'lzx' => 'application/x-lzx',
+            'frm' => 'application/x-maker',
+            'maker' => 'application/x-maker',
+            'frame' => 'application/x-maker',
+            'fm' => 'application/x-maker',
+            'fb' => 'application/x-maker',
+            'book' => 'application/x-maker',
+            'fbdoc' => 'application/x-maker',
+            'wmz' => 'application/x-ms-wmz',
+            'wmd' => 'application/x-ms-wmd',
+            'com' => 'application/x-msdos-program',
+            'exe' => 'application/x-msdos-program',
+            'bat' => 'application/x-msdos-program',
+            'dll' => 'application/x-msdos-program',
+            'msi' => 'application/x-msi',
+            'nc' => 'application/x-netcdf',
+            'pac' => 'application/x-ns-proxy-autoconfig',
+            'nwc' => 'application/x-nwc',
+            'o' => 'application/x-object',
+            'oza' => 'application/x-oz-application',
+            'pl' => 'application/x-perl',
+            'pm' => 'application/x-perl',
+            'p7r' => 'application/x-pkcs7-certreqresp',
+            'crl' => 'application/x-pkcs7-crl',
+            'qtl' => 'application/x-quicktimeplayer',
+            'rpm' => 'audio/x-pn-realaudio-plugin',
+            'shar' => 'application/x-shar',
+            'swf' => 'application/x-shockwave-flash',
+            'swfl' => 'application/x-shockwave-flash',
+            'sh' => 'text/x-sh',
+            'sit' => 'application/x-stuffit',
+            'sv4cpio' => 'application/x-sv4cpio',
+            'sv4crc' => 'application/x-sv4crc',
+            'tar' => 'application/x-tar',
+            'tcl' => 'text/x-tcl',
+            'tex' => 'text/x-tex',
+            'gf' => 'application/x-tex-gf',
+            'pk' => 'application/x-tex-pk',
+            'texinfo' => 'application/x-texinfo',
+            'texi' => 'application/x-texinfo',
+            '~' => 'application/x-trash',
+            '%' => 'application/x-trash',
+            'bak' => 'application/x-trash',
+            'old' => 'application/x-trash',
+            'sik' => 'application/x-trash',
+            't' => 'application/x-troff',
+            'tr' => 'application/x-troff',
+            'roff' => 'application/x-troff',
+            'man' => 'application/x-troff-man',
+            'me' => 'application/x-troff-me',
+            'ms' => 'application/x-troff-ms',
+            'ustar' => 'application/x-ustar',
+            'src' => 'application/x-wais-source',
+            'wz' => 'application/x-wingz',
+            'crt' => 'application/x-x509-ca-cert',
+            'fig' => 'application/x-xfig',
+            'au' => 'audio/basic',
+            'snd' => 'audio/basic',
+            'mid' => 'audio/midi',
+            'midi' => 'audio/midi',
+            'kar' => 'audio/midi',
+            'mpga' => 'audio/mpeg',
+            'mpega' => 'audio/mpeg',
+            'mp2' => 'audio/mpeg',
+            'mp3' => 'audio/mpeg',
+            'mp4' => 'video/mp4',
+            'm3u' => 'audio/x-mpegurl',
+            'sid' => 'audio/prs.sid',
+            'aif' => 'audio/x-aiff',
+            'aiff' => 'audio/x-aiff',
+            'aifc' => 'audio/x-aiff',
+            'gsm' => 'audio/x-gsm',
+            'wma' => 'audio/x-ms-wma',
+            'wax' => 'audio/x-ms-wax',
+            'ra' => 'audio/x-realaudio',
+            'rm' => 'audio/x-pn-realaudio',
+            'ram' => 'audio/x-pn-realaudio',
+            'pls' => 'audio/x-scpls',
+            'sd2' => 'audio/x-sd2',
+            'wav' => 'audio/x-wav',
+            'pdb' => 'chemical/x-pdb',
+            'xyz' => 'chemical/x-xyz',
+            'bmp' => 'image/x-ms-bmp',
+            'gif' => 'image/gif',
+            'ief' => 'image/ief',
+            'jpeg' => 'image/jpeg',
+            'jpg' => 'image/jpeg',
+            'jpe' => 'image/jpeg',
+            'pcx' => 'image/pcx',
+            'png' => 'image/png',
+            'svg' => 'image/svg+xml',
+            'svgz' => 'image/svg+xml',
+            'tiff' => 'image/tiff',
+            'tif' => 'image/tiff',
+            'wbmp' => 'image/vnd.wap.wbmp',
+            'ras' => 'image/x-cmu-raster',
+            'cdr' => 'image/x-coreldraw',
+            'pat' => 'image/x-coreldrawpattern',
+            'cdt' => 'image/x-coreldrawtemplate',
+            'djvu' => 'image/x-djvu',
+            'djv' => 'image/x-djvu',
+            'ico' => 'image/x-icon',
+            'art' => 'image/x-jg',
+            'jng' => 'image/x-jng',
+            'psd' => 'image/x-photoshop',
+            'pnm' => 'image/x-portable-anymap',
+            'pbm' => 'image/x-portable-bitmap',
+            'pgm' => 'image/x-portable-graymap',
+            'ppm' => 'image/x-portable-pixmap',
+            'rgb' => 'image/x-rgb',
+            'xbm' => 'image/x-xbitmap',
+            'xpm' => 'image/x-xpixmap',
+            'xwd' => 'image/x-xwindowdump',
+            'igs' => 'model/iges',
+            'iges' => 'model/iges',
+            'msh' => 'model/mesh',
+            'mesh' => 'model/mesh',
+            'silo' => 'model/mesh',
+            'wrl' => 'x-world/x-vrml',
+            'vrml' => 'x-world/x-vrml',
+            'csv' => 'text/comma-separated-values',
+            'css' => 'text/css',
+            '323' => 'text/h323',
+            'htm' => 'text/html',
+            'html' => 'text/html',
+            'uls' => 'text/iuls',
+            'mml' => 'text/mathml',
+            'asc' => 'text/plain',
+            'txt' => 'text/plain',
+            'text' => 'text/plain',
+            'diff' => 'text/plain',
+            'rtx' => 'text/richtext',
+            'sct' => 'text/scriptlet',
+            'wsc' => 'text/scriptlet',
+            'tm' => 'text/texmacs',
+            'ts' => 'text/texmacs',
+            'tsv' => 'text/tab-separated-values',
+            'jad' => 'text/vnd.sun.j2me.app-descriptor',
+            'wml' => 'text/vnd.wap.wml',
+            'wmls' => 'text/vnd.wap.wmlscript',
+            'xml' => 'text/xml',
+            'xsl' => 'text/xml',
+            'h++' => 'text/x-c++hdr',
+            'hpp' => 'text/x-c++hdr',
+            'hxx' => 'text/x-c++hdr',
+            'hh' => 'text/x-c++hdr',
+            'c++' => 'text/x-c++src',
+            'cpp' => 'text/x-c++src',
+            'cxx' => 'text/x-c++src',
+            'cc' => 'text/x-c++src',
+            'h' => 'text/x-chdr',
+            'c' => 'text/x-csrc',
+            'java' => 'text/x-java',
+            'moc' => 'text/x-moc',
+            'p' => 'text/x-pascal',
+            'pas' => 'text/x-pascal',
+            '***' => 'text/x-pcs-***',
+            'shtml' => 'text/x-server-parsed-html',
+            'etx' => 'text/x-setext',
+            'tk' => 'text/x-tcl',
+            'ltx' => 'text/x-tex',
+            'sty' => 'text/x-tex',
+            'cls' => 'text/x-tex',
+            'vcs' => 'text/x-vcalendar',
+            'vcf' => 'text/x-vcard',
+            'dl' => 'video/dl',
+            'fli' => 'video/fli',
+            'gl' => 'video/gl',
+            'mpeg' => 'video/mpeg',
+            'mpg' => 'video/mpeg',
+            'mpe' => 'video/mpeg',
+            'qt' => 'video/quicktime',
+            'mov' => 'video/quicktime',
+            'mxu' => 'video/vnd.mpegurl',
+            'dif' => 'video/x-dv',
+            'dv' => 'video/x-dv',
+            'lsf' => 'video/x-la-asf',
+            'lsx' => 'video/x-la-asf',
+            'mng' => 'video/x-mng',
+            'asf' => 'video/x-ms-asf',
+            'asx' => 'video/x-ms-asf',
+            'wm' => 'video/x-ms-wm',
+            'wmv' => 'video/x-ms-wmv',
+            'wmx' => 'video/x-ms-wmx',
+            'wvx' => 'video/x-ms-wvx',
+            'avi' => 'video/x-msvideo',
+            'movie' => 'video/x-sgi-movie',
+            'ice' => 'x-conference/x-cooltalk',
+            'vrm' => 'x-world/x-vrml',
+            'rar' => 'application/x-rar-compressed',
+            'cab' => 'application/vnd.ms-cab-compressed'
         );
 
         $part = explode('.', $fileName);
@@ -1592,7 +1623,7 @@ EOF;
             return 'unknown';
         }
 
-        list ($type, $stream) = $parts;
+        list($type, $stream) = $parts;
 
         if (in_array($type, array('image', 'video', 'audio', 'text', 'application'))) {
             switch (true) {

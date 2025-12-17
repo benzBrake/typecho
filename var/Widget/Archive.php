@@ -1441,7 +1441,6 @@ class Widget_Archive extends Widget_Abstract_Contents
      * @param string $splitWord 分割字符
      * @param string $template 展现配置信息
      * @return void
-     * @throws Typecho_Widget_Exception
      */
     public function pageNav($prev = '&laquo;', $next = '&raquo;', $splitPage = 3, $splitWord = '...', $template = '')
     {

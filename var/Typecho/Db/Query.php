@@ -34,16 +34,16 @@ class Typecho_Db_Query
      */
     private static $_default = array(
         'action' => NULL,
-        'table'  => NULL,
+        'table' => NULL,
         'fields' => '*',
-        'join'   => array(),
-        'where'  => NULL,
-        'limit'  => NULL,
+        'join' => array(),
+        'where' => NULL,
+        'limit' => NULL,
         'offset' => NULL,
-        'order'  => NULL,
-        'group'  => NULL,
-        'having'  => NULL,
-        'rows'   => array(),
+        'order' => NULL,
+        'group' => NULL,
+        'having' => NULL,
+        'rows' => array(),
     );
 
     /**
@@ -115,13 +115,15 @@ class Typecho_Db_Query
         $split = '';
         $quotes = 0;
 
-        for ($i = 0; $i < $length; $i ++) {
+        for ($i = 0; $i < $length; $i++) {
             $cha = $str[$i];
 
             if (ctype_alnum($cha) || false !== strpos('_*', $cha)) {
                 if (!$lastIsAlnum) {
-                    if ($quotes > 0 && !ctype_digit($word) && '.' != $split
-                    && false === strpos(self::KEYWORDS, strtoupper($word))) {
+                    if (
+                        $quotes > 0 && !ctype_digit($word) && '.' != $split
+                        && false === strpos(self::KEYWORDS, strtoupper($word))
+                    ) {
                         $word = $this->_adapter->quoteColumn($word);
                     } else if ('.' == $split && 'table' == $word) {
                         $word = $this->_prefix;
@@ -176,7 +178,7 @@ class Typecho_Db_Query
                     $fields[] = $key . ' AS ' . $val;
                 }
             } else {
-                 $fields[] = $value;
+                $fields[] = $value;
             }
         }
 
@@ -518,16 +520,22 @@ class Typecho_Db_Query
      */
     public function prepare($query)
     {
-        $params = $this->_params;
-        $adapter = $this->_adapter;
+        return preg_replace_callback("/#param:([0-9]+)#/", array($this, 'filterPrepare'), $query);
+    }
 
-        return preg_replace_callback("/#param:([0-9]+)#/", function ($matches) use ($params, $adapter) {
-            if (array_key_exists($matches[1], $params)) {
-                return $adapter->quoteValue($params[$matches[1]]);
-            } else {
-                return $matches[0];
-            }
-        }, $query);
+    /**
+     * 过滤参数
+     *
+     * @param array $matches
+     * @return string
+     */
+    public function filterPrepare($matches)
+    {
+        if (array_key_exists($matches[1], $this->_params)) {
+            return $this->_adapter->quoteValue($this->_params[$matches[1]]);
+        } else {
+            return $matches[0];
+        }
     }
 
     /**
@@ -542,15 +550,15 @@ class Typecho_Db_Query
                 return $this->_adapter->parseSelect($this->_sqlPreBuild);
             case Typecho_Db::INSERT:
                 return 'INSERT INTO '
-                . $this->_sqlPreBuild['table']
-                . '(' . implode(' , ', array_keys($this->_sqlPreBuild['rows'])) . ')'
-                . ' VALUES '
-                . '(' . implode(' , ', array_values($this->_sqlPreBuild['rows'])) . ')'
-                . $this->_sqlPreBuild['limit'];
+                    . $this->_sqlPreBuild['table']
+                    . '(' . implode(' , ', array_keys($this->_sqlPreBuild['rows'])) . ')'
+                    . ' VALUES '
+                    . '(' . implode(' , ', array_values($this->_sqlPreBuild['rows'])) . ')'
+                    . $this->_sqlPreBuild['limit'];
             case Typecho_Db::DELETE:
                 return 'DELETE FROM '
-                . $this->_sqlPreBuild['table']
-                . $this->_sqlPreBuild['where'];
+                    . $this->_sqlPreBuild['table']
+                    . $this->_sqlPreBuild['where'];
             case Typecho_Db::UPDATE:
                 $columns = array();
                 if (isset($this->_sqlPreBuild['rows'])) {
@@ -560,11 +568,11 @@ class Typecho_Db_Query
                 }
 
                 return 'UPDATE '
-                . $this->_sqlPreBuild['table']
-                . ' SET ' . implode(' , ', $columns)
-                . $this->_sqlPreBuild['where'];
+                    . $this->_sqlPreBuild['table']
+                    . ' SET ' . implode(' , ', $columns)
+                    . $this->_sqlPreBuild['where'];
             default:
-                return NULL;
+                return '';
         }
     }
 }

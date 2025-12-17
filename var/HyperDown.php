@@ -30,7 +30,7 @@ class HyperDown
      * @access private
      */
     public $_specialWhiteList = array(
-        'table'  =>  'table|tbody|thead|tfoot|tr|td|th'
+        'table' => 'table|tbody|thead|tfoot|tr|td|th'
     );
 
     /**
@@ -139,9 +139,7 @@ class HyperDown
         $this->_uniqid = md5(uniqid());
         $this->_id = 0;
 
-        usort($this->blockParsers, function ($a, $b) {
-            return $a[1] < $b[1] ? -1 : 1;
-        });
+        usort($this->blockParsers, array($this, 'compareBlockParsers'));
 
         foreach ($this->blockParsers as $parser) {
             list($name) = $parser;
@@ -193,7 +191,7 @@ class HyperDown
     public function makeHolder($str)
     {
         $key = "\r" . $this->_uniqid . $this->_id . "\r";
-        $this->_id ++;
+        $this->_id++;
         $this->_holders[$key] = $str;
 
         return $key;
@@ -205,7 +203,7 @@ class HyperDown
      */
     private function initText($text)
     {
-        $text = str_replace(array("\t", "\r"),  array('    ', ''),  $text);
+        $text = str_replace(array("\t", "\r"), array('    ', ''), $text);
         return $text;
     }
 
@@ -228,7 +226,7 @@ class HyperDown
                 }
 
                 $html .= "<li id=\"fn-{$index}\">{$val}</li>";
-                $index ++;
+                $index++;
             }
 
             $html .= '</ol></div>';
@@ -280,7 +278,7 @@ class HyperDown
         $deep = 0;
         while (strpos($text, "\r") !== false && $deep < 10) {
             $text = str_replace(array_keys($this->_holders), array_values($this->_holders), $text);
-            $deep ++;
+            $deep++;
         }
 
         if ($clearHolders) {
@@ -306,20 +304,20 @@ class HyperDown
         return '';
     }
 
-    /**
-     * @param array $lines
-     * @param $start
-     * @return string[]
-     */
-    public function markLines(array $lines, $start)
+    public function markLines($lines, $start)
     {
-        $i = -1;
-        $self = $this;
+        if (!$this->_line) {
+            return $lines;
+        }
 
-        return $this->_line ? array_map(function ($line) use ($self, $start, &$i) {
-            $i ++;
-            return $self->markLine($start + $i) . $line;
-        }, $lines) : $lines;
+        $i = -1;
+        $result = array();
+        foreach ($lines as $line) {
+            $i++;
+            $result[] = $this->markLine($start + $i) . $line;
+        }
+
+        return $result;
     }
 
     /**
@@ -328,20 +326,15 @@ class HyperDown
      */
     public function optimizeLines($html)
     {
-        $last = 0;
-
-        return $this->_line ?
-            preg_replace_callback("/class=\"line\" data\-start=\"([0-9]+)\" data\-end=\"([0-9]+)\" (data\-id=\"{$this->_uniqid}\")/",
-                function ($matches) use (&$last) {
-                    if ($matches[1] != $last) {
-                        $replace = 'class="line" data-start="' . $last . '" data-start-original="' . $matches[1] . '" data-end="' . $matches[2] . '" ' . $matches[3];
-                    } else {
-                        $replace = $matches[0];
-                    }
-
-                    $last = $matches[2] + 1;
-                    return $replace;
-                }, $html) : $html;
+        if (!$this->_line) {
+            return $html;
+        }
+        $this->last = 0; // 使用类属性存储last值
+        return preg_replace_callback(
+            "/class=\"line\" data\-start=\"([0-9]+)\" data\-end=\"([0-9]+)\" (data\-id=\"{$this->_uniqid}\")/",
+            array($this, 'optimizeLinesCallback'),
+            $html
+        );
     }
 
     /**
@@ -377,159 +370,75 @@ class HyperDown
      */
     public function parseInline($text, $whiteList = '', $clearHolders = true, $enableAutoLink = true)
     {
-        $self = $this;
         $text = $this->call('beforeParseInline', $text);
-
+        // 保存临时变量
+        $this->_tempWhiteList = $whiteList;
         // code
         $text = preg_replace_callback(
             "/(^|[^\\\])(`+)(.+?)\\2/",
-            function ($matches) use ($self) {
-                return  $matches[1] . $self->makeHolder(
-                    '<code>' . htmlspecialchars($matches[3]) . '</code>'
-                );
-            },
+            array($this, '_parseInlineCodeCallback'),
             $text
         );
-
         // mathjax
         $text = preg_replace_callback(
             "/(^|[^\\\])(\\$+)(.+?)\\2/",
-            function ($matches) use ($self) {
-                return  $matches[1] . $self->makeHolder(
-                    $matches[2] . htmlspecialchars($matches[3]) . $matches[2]
-                );
-            },
+            array($this, '_parseInlineMathjaxCallback'),
             $text
         );
-
         // escape
         $text = preg_replace_callback(
             "/\\\(.)/u",
-            function ($matches) use ($self) {
-                $prefix = preg_match("/^[-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]$/", $matches[1]) ? '' : '\\';
-                $escaped = htmlspecialchars($matches[1]);
-                $escaped = str_replace('$', '&dollar;', $escaped);
-                return  $self->makeHolder($prefix . $escaped);
-            },
+            array($this, '_parseInlineEscapeCallback'),
             $text
         );
-
         // link
         $text = preg_replace_callback(
-            "/<(https?:\/\/.+|(?:mailto:)?[_a-z0-9-\.\+]+@[_\w-]+(?:\.[a-z]{2,})+)>/i",
-            function ($matches) use ($self) {
-                $url = $self->cleanUrl($matches[1]);
-                $link = $self->call('parseLink', $url);
-
-                return $self->makeHolder(
-                    "<a href=\"{$url}\">{$link}</a>"
-                );
-            },
+            "/<(https?:\/\/.+|(?:mailto:)?[_a-z0-9-\.\+]+@[_\w-]+\.[a-z]{2,})>/i",
+            array($this, '_parseInlineLinkCallback'),
             $text
         );
-
         // encode unsafe tags
         $text = preg_replace_callback(
             "/<(\/?)([a-z0-9-]+)(\s+[^>]*)?>/i",
-            function ($matches) use ($self, $whiteList) {
-                if ($self->_html || false !== stripos(
-                    '|' . $self->_commonWhiteList . '|' . $whiteList . '|', '|' . $matches[2] . '|'
-                )) {
-                    return $self->makeHolder($matches[0]);
-                } else {
-                    return $self->makeHolder(htmlspecialchars($matches[0]));
-                }
-            },
+            array($this, '_parseInlineEncodeUnsafeTagsCallback'),
             $text
         );
-
         if ($this->_html) {
-            $text = preg_replace_callback("/<!\-\-(.*?)\-\->/", function ($matches) use ($self) {
-                return $self->makeHolder($matches[0]);
-            }, $text);
+            $text = preg_replace_callback(
+                "/<!\-\-(.*?)\-\->/",
+                array($this, '_parseInlineHtmlCommentCallback'),
+                $text
+            );
         }
-
-        $text = str_replace(array('<', '>'),  array('&lt;', '&gt;'),  $text);
-
+        $text = str_replace(array('<', '>'), array('&lt;', '&gt;'), $text);
         // footnote
         $text = preg_replace_callback(
             "/\[\^((?:[^\]]|\\\\\]|\\\\\[)+?)\]/",
-            function ($matches) use ($self) {
-                $id = array_search($matches[1], $self->_footnotes);
-
-                if (false === $id) {
-                    $id = count($self->_footnotes) + 1;
-                    $self->_footnotes[$id] = $self->parseInline($matches[1], '', false);
-                }
-
-                return $self->makeHolder(
-                    "<sup id=\"fnref-{$id}\"><a href=\"#fn-{$id}\" class=\"footnote-ref\">{$id}</a></sup>"
-                );
-            },
+            array($this, '_parseInlineFootnoteCallback'),
             $text
         );
-
         // image
         $text = preg_replace_callback(
             "/!\[((?:[^\]]|\\\\\]|\\\\\[)*?)\]\(((?:[^\)]|\\\\\)|\\\\\()+?)\)/",
-            function ($matches) use ($self) {
-                $escaped = htmlspecialchars($self->escapeBracket($matches[1]));
-                $url = $self->escapeBracket($matches[2]);
-                list ($url, $title) = $self->cleanUrl($url, true);
-                $title = empty($title)? $escaped : " title=\"{$title}\"";
-
-                return $self->makeHolder(
-                    "<img src=\"{$url}\" alt=\"{$title}\" title=\"{$title}\">"
-                );
-            },
+            array($this, '_parseInlineImageCallback'),
             $text
         );
-
         $text = preg_replace_callback(
             "/!\[((?:[^\]]|\\\\\]|\\\\\[)*?)\]\[((?:[^\]]|\\\\\]|\\\\\[)+?)\]/",
-            function ($matches) use ($self) {
-                $escaped = htmlspecialchars($self->escapeBracket($matches[1]));
-
-                $result = isset( $self->_definitions[$matches[2]] ) ?
-                    "<img src=\"{$self->_definitions[$matches[2]]}\" alt=\"{$escaped}\" title=\"{$escaped}\">"
-                    : $escaped;
-
-                return $self->makeHolder($result);
-            },
+            array($this, '_parseInlineImageRefCallback'),
             $text
         );
-
         // link
         $text = preg_replace_callback(
             "/\[((?:[^\]]|\\\\\]|\\\\\[)+?)\]\(((?:[^\)]|\\\\\)|\\\\\()+?)\)/",
-            function ($matches) use ($self) {
-                $escaped = $self->parseInline(
-                    $self->escapeBracket($matches[1]),  '',  false, false
-                );
-                $url = $self->escapeBracket($matches[2]);
-                list ($url, $title) = $self->cleanUrl($url, true);
-                $title = empty($title) ? '' : " title=\"{$title}\"";
-
-                return $self->makeHolder("<a href=\"{$url}\"{$title}>{$escaped}</a>");
-            },
+            array($this, '_parseInlineLinkCallback2'),
             $text
         );
-
         $text = preg_replace_callback(
             "/\[((?:[^\]]|\\\\\]|\\\\\[)+?)\]\[((?:[^\]]|\\\\\]|\\\\\[)+?)\]/",
-            function ($matches) use ($self) {
-                $escaped = $self->parseInline(
-                    $self->escapeBracket($matches[1]),  '',  false
-                );
-                $result = isset( $self->_definitions[$matches[2]] ) ?
-                    "<a href=\"{$self->_definitions[$matches[2]]}\">{$escaped}</a>"
-                    : $escaped;
-
-                return $self->makeHolder($result);
-            },
+            array($this, '_parseInlineLinkRefCallback'),
             $text
         );
-
         // strong and em and some fuck
         $text = $this->parseInlineCallback($text);
         $text = preg_replace(
@@ -537,106 +446,69 @@ class HyperDown
             "<a href=\"mailto:\\1\">\\1</a>",
             $text
         );
-
         // autolink url
         if ($enableAutoLink) {
             $text = preg_replace_callback(
-                "/(^|[^\"])(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\b([-a-zA-Z0-9()@:%_\+.~#?&\/=]*)|(?:mailto:)?[_a-z0-9-\.\+]+@[_\w-]+(?:\.[a-z]{2,})+)($|[^\"])/",
-                function ($matches) use ($self) {
-                    $url = $self->cleanUrl($matches[2]);
-                    $link = $self->call('parseLink', $matches[2]);
-                    return "{$matches[1]}<a href=\"{$url}\">{$link}</a>{$matches[5]}";
-                },
+                "/(^|[^\"])(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\b([-a-zA-Z0-9()@:%_\+.~#?&\/=]*)|(?:mailto:)?[_a-z0-9-\.\+]+@[_\w-]+\.[a-z]{2,})($|[^\"])/",
+                array($this, '_parseInlineAutoLinkCallback'),
                 $text
             );
         }
-
         $text = $this->call('afterParseInlineBeforeRelease', $text);
         $text = $this->releaseHolder($text, $clearHolders);
-
         $text = $this->call('afterParseInline', $text);
-
+        // 清理临时变量
+        unset($this->_tempWhiteList);
         return $text;
     }
-
     /**
      * @param $text
      * @return mixed
      */
     public function parseInlineCallback($text)
     {
-        $self = $this;
-
+        // 处理 ***...*** (粗体+斜体)
         $text = preg_replace_callback(
             "/(\*{3})(.+?)\\1/",
-            function ($matches) use ($self) {
-                return  '<strong><em>' .
-                    $self->parseInlineCallback($matches[2]) .
-                    '</em></strong>';
-            },
+            array($this, '_parseInlineCallbackStrongEm'),
             $text
         );
-
+        // 处理 **...** (粗体)
         $text = preg_replace_callback(
             "/(\*{2})(.+?)\\1/",
-            function ($matches) use ($self) {
-                return  '<strong>' .
-                    $self->parseInlineCallback($matches[2]) .
-                    '</strong>';
-            },
+            array($this, '_parseInlineCallbackStrong'),
             $text
         );
-
+        // 处理 *...* (斜体)
         $text = preg_replace_callback(
             "/(\*)(.+?)\\1/",
-            function ($matches) use ($self) {
-                return  '<em>' .
-                    $self->parseInlineCallback($matches[2]) .
-                    '</em>';
-            },
+            array($this, '_parseInlineCallbackEm'),
             $text
         );
-
+        // 处理 ___...___ (下划线粗体+斜体)
         $text = preg_replace_callback(
             "/(\s+|^)(_{3})(.+?)\\2(\s+|$)/",
-            function ($matches) use ($self) {
-                return  $matches[1] . '<strong><em>' .
-                    $self->parseInlineCallback($matches[3]) .
-                    '</em></strong>' . $matches[4];
-            },
+            array($this, '_parseInlineCallbackStrongEmUnderscore'),
             $text
         );
-
+        // 处理 __...__ (下划线粗体)
         $text = preg_replace_callback(
             "/(\s+|^)(_{2})(.+?)\\2(\s+|$)/",
-            function ($matches) use ($self) {
-                return  $matches[1] . '<strong>' .
-                    $self->parseInlineCallback($matches[3]) .
-                    '</strong>' . $matches[4];
-            },
+            array($this, '_parseInlineCallbackStrongUnderscore'),
             $text
         );
-
+        // 处理 _..._ (下划线斜体)
         $text = preg_replace_callback(
             "/(\s+|^)(_)(.+?)\\2(\s+|$)/",
-            function ($matches) use ($self) {
-                return  $matches[1] . '<em>' .
-                    $self->parseInlineCallback($matches[3]) .
-                    '</em>' . $matches[4];
-            },
+            array($this, '_parseInlineCallbackEmUnderscore'),
             $text
         );
-
+        // 处理 ~~...~~ (删除线)
         $text = preg_replace_callback(
             "/(~{2})(.+?)\\1/",
-            function ($matches) use ($self) {
-                return  '<del>' .
-                    $self->parseInlineCallback($matches[2]) .
-                    '</del>';
-            },
+            array($this, '_parseInlineCallbackDel'),
             $text
         );
-
         return $text;
     }
 
@@ -655,9 +527,9 @@ class HyperDown
         $this->_pos = -1;
 
         $state = array(
-            'special'   =>  implode("|", array_keys($this->_specialWhiteList)),
-            'empty'     =>  0,
-            'html'      =>  false
+            'special' => implode("|", array_keys($this->_specialWhiteList)),
+            'empty' => 0,
+            'html' => false
         );
 
         // analyze by line
@@ -700,15 +572,17 @@ class HyperDown
             if (preg_match("/^(\s*)(~{3,}|`{3,})([^`~]*)$/i", $line)) {
                 // ignore code
                 return true;
-            } elseif ($state['empty'] <= 1
+            } elseif (
+                $state['empty'] <= 1
                 && preg_match("/^(\s*)\S+/", $line, $matches)
-                && strlen($matches[1]) >= ($block[3][0] + $state['empty'])) {
+                && strlen($matches[1]) >= ($block[3][0] + $state['empty'])
+            ) {
 
                 $state['empty'] = 0;
                 $this->setBlock($key);
                 return false;
             } elseif (preg_match("/^(\s*)$/", $line) && $state['empty'] == 0) {
-                $state['empty'] ++;
+                $state['empty']++;
                 $this->setBlock($key);
                 return false;
             }
@@ -723,7 +597,7 @@ class HyperDown
             // opened
             if ($this->isBlock('list')) {
                 if ($space < $block[3][0] || ($space == $block[3][0] && $type != $block[3][1])) {
-                    $this->startBlock('list', $key, [$space, $type, $tab]);
+                    $this->startBlock('list', $key, array($space, $type, $tab));
                 } else {
                     $this->setBlock($key);
                 }
@@ -775,7 +649,9 @@ class HyperDown
                 $state['code'] = $matches[2];
 
                 $this->startBlock('code', $key, array(
-                    $matches[1],  $matches[3],  $isAfterList
+                    $matches[1],
+                    $matches[3],
+                    $isAfterList
                 ));
             }
 
@@ -950,7 +826,8 @@ class HyperDown
         if (preg_match("/^\[\^((?:[^\]]|\\]|\\[)+?)\]:/", $line, $matches)) {
             $space = strlen($matches[0]) - 1;
             $this->startBlock('footnote', $key, array(
-                $space, $matches[1]
+                $space,
+                $matches[1]
             ));
 
             return false;
@@ -1019,9 +896,11 @@ class HyperDown
             } else {
                 $head = 0;
 
-                if (empty($block) ||
+                if (
+                    empty($block) ||
                     $block[0] != 'normal' ||
-                    preg_match("/^\s*$/", $lines[$block[2]])) {
+                    preg_match("/^\s*$/", $lines[$block[2]])
+                ) {
                     $this->startBlock('table', $key);
                 } else {
                     $head = 1;
@@ -1092,8 +971,10 @@ class HyperDown
      */
     private function parseBlockMh($block, $key, $line, &$state, $lines)
     {
-        if (preg_match("/^\s*((=|-){2,})\s*$/", $line, $matches)
-                    && ($block && $block[0] == "normal" && !preg_match("/^\s*$/", $lines[$block[2]]))) {    // check if last line isn't empty
+        if (
+            preg_match("/^\s*((=|-){2,})\s*$/", $line, $matches)
+            && ($block && $block[0] == "normal" && !preg_match("/^\s*$/", $lines[$block[2]]))
+        ) {    // check if last line isn't empty
             if ($this->isBlock('normal')) {
                 $this->backBlock(1, 'mh', $matches[1][0] == '=' ? 1 : 2)
                     ->setBlock($key)
@@ -1162,7 +1043,7 @@ class HyperDown
             }
         } elseif ($this->isBlock('table')) {
             if (false !== strpos($line, '|')) {
-                $block[3][2] ++;
+                $block[3][2]++;
                 $this->setBlock($key, $block[3]);
             } else {
                 $this->startBlock('normal', $key);
@@ -1192,57 +1073,53 @@ class HyperDown
     private function optimizeBlocks(array $blocks, array $lines)
     {
         $blocks = $this->call('beforeOptimizeBlocks', $blocks, $lines);
-
         $key = 0;
         while (isset($blocks[$key])) {
             $moved = false;
-
             $block = &$blocks[$key];
             $prevBlock = isset($blocks[$key - 1]) ? $blocks[$key - 1] : NULL;
             $nextBlock = isset($blocks[$key + 1]) ? $blocks[$key + 1] : NULL;
-
             list($type, $from, $to) = $block;
-
             if ('pre' == $type) {
+                // 使用命名函数替代匿名函数
                 $isEmpty = array_reduce(
                     array_slice($lines, $block[1], $block[2] - $block[1] + 1),
-                    function ($result, $line) {
-                        return preg_match("/^\s*$/", $line) && $result;
-                    },
+                    array($this, '_isAllEmptyLines'),
                     true
                 );
-
                 if ($isEmpty) {
                     $block[0] = $type = 'normal';
                 }
             }
-
             if ('normal' == $type) {
                 // combine two blocks
                 $types = array('list', 'quote');
-
-                if ($from == $to && preg_match("/^\s*$/", $lines[$from])
-                    && !empty($prevBlock) && !empty($nextBlock)) {
-                    if ($prevBlock[0] == $nextBlock[0] && in_array($prevBlock[0], $types)
+                if (
+                    $from == $to && preg_match("/^\s*$/", $lines[$from])
+                    && !empty($prevBlock) && !empty($nextBlock)
+                ) {
+                    if (
+                        $prevBlock[0] == $nextBlock[0] && in_array($prevBlock[0], $types)
                         && ($prevBlock[0] != 'list'
-                            || ($prevBlock[3][0] == $nextBlock[3][0] && $prevBlock[3][1] == $nextBlock[3][1]))) {
+                            || ($prevBlock[3][0] == $nextBlock[3][0] && $prevBlock[3][1] == $nextBlock[3][1]))
+                    ) {
                         // combine 3 blocks
                         $blocks[$key - 1] = array(
-                            $prevBlock[0],  $prevBlock[1],  $nextBlock[2], isset($prevBlock[3]) ? $prevBlock[3] : null
+                            $prevBlock[0],
+                            $prevBlock[1],
+                            $nextBlock[2],
+                            isset($prevBlock[3]) ? $prevBlock[3] : null
                         );
                         array_splice($blocks, $key, 2);
-
                         // do not move
                         $moved = true;
                     }
                 }
             }
-
             if (!$moved) {
-                $key ++;
+                $key++;
             }
         }
-
         return $this->call('afterOptimizeBlocks', $blocks, $lines);
     }
 
@@ -1259,7 +1136,6 @@ class HyperDown
         list($blank, $lang) = $parts;
         $lang = trim($lang);
         $count = strlen($blank);
-
         if (!preg_match("/^[_a-z0-9-\+\#\:\.]+$/i", $lang)) {
             $lang = NULL;
         } else {
@@ -1270,19 +1146,23 @@ class HyperDown
                 $rel = trim($rel);
             }
         }
-
         $isEmpty = true;
-
-        $lines = array_map(function ($line) use ($count, &$isEmpty) {
+        $processedLines = array();
+        $codeLines = array_slice($lines, 1, -1); // 去除首尾行
+        // 使用循环替代 array_map 和匿名函数
+        foreach ($codeLines as $line) {
+            // 移除每行开头的空格
             $line = preg_replace("/^[ ]{{$count}}/", '', $line);
+
+            // 检查是否为空行
             if ($isEmpty && !preg_match("/^\s*$/", $line)) {
                 $isEmpty = false;
             }
 
-            return htmlspecialchars($line);
-        }, array_slice($lines, 1, -1));
-        $str = implode("\n", $this->markLines($lines, $start + 1));
-
+            // 转义HTML特殊字符
+            $processedLines[] = htmlspecialchars($line);
+        }
+        $str = implode("\n", $this->markLines($processedLines, $start + 1));
         return $isEmpty ? '' :
             '<pre><code' . (!empty($lang) ? " class=\"{$lang}\"" : '')
             . (!empty($rel) ? " rel=\"{$rel}\"" : '') . '>'
@@ -1471,25 +1351,28 @@ class HyperDown
                 }
             }
 
-
-            $rows = array_map(function ($row) {
+            function processRow($row)
+            {
                 if (preg_match("/^\s*$/", $row)) {
                     return ' ';
                 } else {
                     return trim($row);
                 }
-            }, explode('|', $line));
+            }
+            $exploded = explode('|', $line);
+            $rows = array_map('processRow', $exploded);
             $columns = array();
             $last = -1;
 
             foreach ($rows as $row) {
                 if (strlen($row) > 0) {
-                    $last ++;
+                    $last++;
                     $columns[$last] = array(
-                        isset($columns[$last]) ? $columns[$last][0] + 1 : 1,  $row
+                        isset($columns[$last]) ? $columns[$last][0] + 1 : 1,
+                        $row
                     );
                 } elseif (isset($columns[$last])) {
-                    $columns[$last][0] ++;
+                    $columns[$last][0]++;
                 } else {
                     $columns[0] = array(1, $row);
                 }
@@ -1502,8 +1385,8 @@ class HyperDown
             }
 
             $html .= '<tr' . ($this->_line ? ' class="line" data-start="'
-                    . ($start + $key) . '" data-end="' . ($start + $key)
-                    . '" data-id="' . $this->_uniqid . '"' : '') . '>';
+                . ($start + $key) . '" data-end="' . ($start + $key)
+                . '" data-id="' . $this->_uniqid . '"' : '') . '>';
 
             foreach ($columns as $key => $column) {
                 list($num, $text) = $column;
@@ -1563,19 +1446,22 @@ class HyperDown
     {
         foreach ($lines as $key => &$line) {
             $line = $this->parseInline($line);
-
             if (!preg_match("/^\s*$/", $line)) {
                 $line = $this->markLine($start + $key) . $line;
             }
         }
-
         $str = trim(implode("\n", $lines));
-        $str = preg_replace_callback("/(\n\s*){2,}/", function () use (&$inline) {
-            $inline = false;
-            return "</p><p>";
-        }, $str);
-        $str = preg_replace("/\n/", "<br>", $str);
 
+        // 保存引用变量到类属性
+        $this->_tempInline = &$inline;
+
+        $str = preg_replace_callback(
+            "/(\n\s*){2,}/",
+            array($this, '_parseNormalCallback'),
+            $str
+        );
+
+        $str = preg_replace("/\n/", "<br>", $str);
         return preg_match("/^\s*$/", $str) ? '' : ($inline ? $str : "<p>{$str}</p>");
     }
 
@@ -1620,8 +1506,10 @@ class HyperDown
     private function parseHtml(array $lines, $type, $start)
     {
         foreach ($lines as &$line) {
-            $line = $this->parseInline($line,
-                isset($this->_specialWhiteList[$type]) ? $this->_specialWhiteList[$type] : '');
+            $line = $this->parseInline(
+                $line,
+                isset($this->_specialWhiteList[$type]) ? $this->_specialWhiteList[$type] : ''
+            );
         }
 
         return implode("\n", $this->markLines($lines, $start));
@@ -1649,7 +1537,7 @@ class HyperDown
 
         $url = preg_replace("/[\"'<>\s]/", '', $url);
 
-        if (preg_match("/^(mailto:)?[_a-z0-9-\.\+]+@[_\w-]+(?:\.[a-z]{2,})+$/i", $url, $matches)) {
+        if (preg_match("/^(mailto:)?[_a-z0-9-\.\+]+@[_\w-]+\.[a-z]{2,}$/i", $url, $matches)) {
             if (empty($matches[1])) {
                 $url = 'mailto:' . $url;
             }
@@ -1659,7 +1547,7 @@ class HyperDown
             return '#';
         }
 
-        return $parseTitle ? [$url, $title] : $url;
+        return $parseTitle ? array($url, $title) : $url;
     }
 
     /**
@@ -1669,7 +1557,9 @@ class HyperDown
     public function escapeBracket($str)
     {
         return str_replace(
-            array('\[', '\]', '\(', '\)'),  array('[', ']', '(', ')'),  $str
+            array('\[', '\]', '\(', '\)'),
+            array('[', ']', '(', ')'),
+            $str
         );
     }
 
@@ -1683,7 +1573,7 @@ class HyperDown
      */
     private function startBlock($type, $start, $value = NULL)
     {
-        $this->_pos ++;
+        $this->_pos++;
         $this->_current = $type;
 
         $this->_blocks[$this->_pos] = array($type, $start, $start, $value);
@@ -1763,12 +1653,15 @@ class HyperDown
         $this->_blocks[$this->_pos][2] = $last - $step;
 
         if ($this->_blocks[$this->_pos][1] <= $this->_blocks[$this->_pos][2]) {
-            $this->_pos ++;
+            $this->_pos++;
         }
 
         $this->_current = $type;
         $this->_blocks[$this->_pos] = array(
-            $type,  $last - $step + 1,  $last,  $value
+            $type,
+            $last - $step + 1,
+            $last,
+            $value
         );
 
         return $this;
@@ -1790,8 +1683,203 @@ class HyperDown
         $this->_blocks[$this->_pos - 1] = $prev;
         $this->_current = $prev[0];
         unset($this->_blocks[$this->_pos]);
-        $this->_pos --;
+        $this->_pos--;
 
         return $this;
+    }
+
+    /**
+     * compareBlockParsers
+     *
+     * @param mixed $a
+     * @param mixed $b
+     * @return int
+     */
+    private function compareBlockParsers($a, $b)
+    {
+        return $a[1] < $b[1] ? -1 : 1;
+    }
+
+    // 添加回调方法
+    private function optimizeLinesCallback($matches)
+    {
+        if ($matches[1] != $this->last) {
+            $replace = 'class="line" data-start="' . $this->last . '" data-start-original="' . $matches[1] . '" data-end="' . $matches[2] . '" ' . $matches[3];
+        } else {
+            $replace = $matches[0];
+        }
+        $this->last = $matches[2] + 1;
+        return $replace;
+    }
+
+    private function _parseInlineCodeCallback($matches)
+    {
+        return $matches[1] . $this->makeHolder(
+            '<code>' . htmlspecialchars($matches[3]) . '</code>'
+        );
+    }
+    private function _parseInlineMathjaxCallback($matches)
+    {
+        return $matches[1] . $this->makeHolder(
+            $matches[2] . htmlspecialchars($matches[3]) . $matches[2]
+        );
+    }
+    private function _parseInlineEscapeCallback($matches)
+    {
+        $prefix = preg_match("/^[-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]$/", $matches[1]) ? '' : '\\';
+        $escaped = htmlspecialchars($matches[1]);
+        $escaped = str_replace('$', '&dollar;', $escaped);
+        return $this->makeHolder($prefix . $escaped);
+    }
+    private function _parseInlineLinkCallback($matches)
+    {
+        $url = $this->cleanUrl($matches[1]);
+        $link = $this->call('parseLink', $url);
+        return $this->makeHolder(
+            "<a href=\"{$url}\">{$link}</a>"
+        );
+    }
+    private function _parseInlineEncodeUnsafeTagsCallback($matches)
+    {
+        if (
+            $this->_html || false !== stripos(
+                '|' . $this->_commonWhiteList . '|' . $this->_tempWhiteList . '|',
+                '|' . $matches[2] . '|'
+            )
+        ) {
+            return $this->makeHolder($matches[0]);
+        } else {
+            return $this->makeHolder(htmlspecialchars($matches[0]));
+        }
+    }
+    private function _parseInlineHtmlCommentCallback($matches)
+    {
+        return $this->makeHolder($matches[0]);
+    }
+    private function _parseInlineFootnoteCallback($matches)
+    {
+        $id = array_search($matches[1], $this->_footnotes);
+        if (false === $id) {
+            $id = count($this->_footnotes) + 1;
+            $this->_footnotes[$id] = $this->parseInline($matches[1], '', false);
+        }
+        return $this->makeHolder(
+            "<sup id=\"fnref-{$id}\"><a href=\"#fn-{$id}\" class=\"footnote-ref\">{$id}</a></sup>"
+        );
+    }
+    private function _parseInlineImageCallback($matches)
+    {
+        $escaped = htmlspecialchars($this->escapeBracket($matches[1]));
+        $url = $this->escapeBracket($matches[2]);
+        list($url, $title) = $this->cleanUrl($url, true);
+        $title = empty($title) ? $escaped : " title=\"{$title}\"";
+        return $this->makeHolder(
+            "<img src=\"{$url}\" alt=\"{$title}\" title=\"{$title}\">"
+        );
+    }
+    private function _parseInlineImageRefCallback($matches)
+    {
+        $escaped = htmlspecialchars($this->escapeBracket($matches[1]));
+        $result = isset($this->_definitions[$matches[2]]) ?
+            "<img src=\"{$this->_definitions[$matches[2]]}\" alt=\"{$escaped}\" title=\"{$escaped}\">"
+            : $escaped;
+        return $this->makeHolder($result);
+    }
+    private function _parseInlineLinkCallback2($matches)
+    {
+        $escaped = $this->parseInline(
+            $this->escapeBracket($matches[1]),
+            '',
+            false,
+            false
+        );
+        $url = $this->escapeBracket($matches[2]);
+        list($url, $title) = $this->cleanUrl($url, true);
+        $title = empty($title) ? '' : " title=\"{$title}\"";
+        return $this->makeHolder("<a href=\"{$url}\"{$title}>{$escaped}</a>");
+    }
+    private function _parseInlineLinkRefCallback($matches)
+    {
+        $escaped = $this->parseInline(
+            $this->escapeBracket($matches[1]),
+            '',
+            false
+        );
+        $result = isset($this->_definitions[$matches[2]]) ?
+            "<a href=\"{$this->_definitions[$matches[2]]}\">{$escaped}</a>"
+            : $escaped;
+        return $this->makeHolder($result);
+    }
+    private function _parseInlineAutoLinkCallback($matches)
+    {
+        $url = $this->cleanUrl($matches[2]);
+        $link = $this->call('parseLink', $matches[2]);
+        return "{$matches[1]}<a href=\"{$url}\">{$link}</a>{$matches[5]}";
+    }
+
+    private function _parseInlineCallbackStrongEm($matches)
+    {
+        return '<strong><em>' .
+            $this->parseInlineCallback($matches[2]) .
+            '</em></strong>';
+    }
+    private function _parseInlineCallbackStrong($matches)
+    {
+        return '<strong>' .
+            $this->parseInlineCallback($matches[2]) .
+            '</strong>';
+    }
+    private function _parseInlineCallbackEm($matches)
+    {
+        return '<em>' .
+            $this->parseInlineCallback($matches[2]) .
+            '</em>';
+    }
+    private function _parseInlineCallbackStrongEmUnderscore($matches)
+    {
+        return $matches[1] . '<strong><em>' .
+            $this->parseInlineCallback($matches[3]) .
+            '</em></strong>' . $matches[4];
+    }
+    private function _parseInlineCallbackStrongUnderscore($matches)
+    {
+        return $matches[1] . '<strong>' .
+            $this->parseInlineCallback($matches[3]) .
+            '</strong>' . $matches[4];
+    }
+    private function _parseInlineCallbackEmUnderscore($matches)
+    {
+        return $matches[1] . '<em>' .
+            $this->parseInlineCallback($matches[3]) .
+            '</em>' . $matches[4];
+    }
+    private function _parseInlineCallbackDel($matches)
+    {
+        return '<del>' .
+            $this->parseInlineCallback($matches[2]) .
+            '</del>';
+    }
+    /**
+     * 检查所有行是否都是空行
+     * 
+     * @param bool $result 累积结果
+     * @param string $line 当前行
+     * @return bool 如果所有行都是空行则返回true，否则返回false
+     */
+    private function _isAllEmptyLines($result, $line)
+    {
+        return preg_match("/^\s*$/", $line) && $result;
+    }
+    /**
+     * 处理多个连续换行符的回调函数
+     * 
+     * @param array $matches 正则表达式匹配结果
+     * @return string 替换后的字符串
+     */
+    private function _parseNormalCallback($matches)
+    {
+        // 修改类属性中的引用变量
+        $this->_tempInline = false;
+        return "</p><p>";
     }
 }

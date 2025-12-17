@@ -94,7 +94,7 @@ class Widget_Upload extends Widget_Abstract_Contents implements Widget_Interface
 
         $ext = self::getSafeName($file['name']);
 
-        if (!self::checkFileType($ext)) {
+        if (!self::checkFileType($ext) || Typecho_Common::isAppEngine()) {
             return false;
         }
 
@@ -172,7 +172,7 @@ class Widget_Upload extends Widget_Abstract_Contents implements Widget_Interface
 
         $ext = self::getSafeName($file['name']);
         
-        if ($content['attachment']->type != $ext) {
+        if ($content['attachment']->type != $ext || Typecho_Common::isAppEngine()) {
             return false;
         }
 
@@ -243,7 +243,8 @@ class Widget_Upload extends Widget_Abstract_Contents implements Widget_Interface
             return $result;
         }
 
-        return @unlink(__TYPECHO_ROOT_DIR__ . '/' . $content['attachment']->path);
+        return !Typecho_Common::isAppEngine() 
+            && @unlink(__TYPECHO_ROOT_DIR__ . '/' . $content['attachment']->path);
     }
 
     /**

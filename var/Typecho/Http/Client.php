@@ -40,7 +40,7 @@ class Typecho_Http_Client
 
         if (empty($adapters)) {
             $adapters = array();
-            $adapterFiles = glob(dirname(__FILE__) . '/Client/Adapter/*.php');
+            $adapterFiles = Typecho_Compat::glob(dirname(__FILE__) . '/Client/Adapter/*.php');
             foreach ($adapterFiles as $file) {
                 $adapters[] = substr(basename($file), 0, -4);
             }

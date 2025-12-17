@@ -54,7 +54,7 @@ class Widget_Themes_Files extends Typecho_Widget
             && is_dir($dir = $this->widget('Widget_Options')->themeFile($this->_currentTheme))
             && (!defined('__TYPECHO_THEME_WRITEABLE__') || __TYPECHO_THEME_WRITEABLE__)) {
 
-            $files = array_filter(glob($dir . '/*'), function ($path) {
+            $files = array_filter(Typecho_Compat::glob($dir . '/*'), function ($path) {
                 return preg_match("/\.(php|js|css|vbs)$/i", $path);
             });
 
@@ -112,7 +112,7 @@ class Widget_Themes_Files extends Typecho_Widget
     public function currentIsWriteable()
     {
         return is_writeable($this->widget('Widget_Options')
-            ->themeFile($this->_currentTheme, $this->_currentFile))
+            ->themeFile($this->_currentTheme, $this->_currentFile)) && !Typecho_Common::isAppEngine()
         && (!defined('__TYPECHO_THEME_WRITEABLE__') || __TYPECHO_THEME_WRITEABLE__);
     }
 

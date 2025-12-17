@@ -359,7 +359,7 @@ class Widget_Backup extends Widget_Abstract_Options implements Widget_Interface_
      */
     public function listFiles()
     {
-        return array_map('basename', glob(__TYPECHO_BACKUP_DIR__ . '/*.dat'));
+        return array_map('basename', Typecho_Compat::glob(__TYPECHO_BACKUP_DIR__ . '/*.dat'));
     }
 
     /**

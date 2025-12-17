@@ -1,5 +1,6 @@
 <?php
-if (!defined('__TYPECHO_ROOT_DIR__')) exit;
+if (!defined('__TYPECHO_ROOT_DIR__'))
+    exit;
 /**
  * Typecho Blog Platform
  *
@@ -43,8 +44,14 @@ class Typecho_Db_Adapter_Mysql implements Typecho_Db_Adapter
      */
     public function connect(Typecho_Config $config)
     {
-        if ($this->_dbLink = @mysql_connect($config->host . (empty($config->port) ? '' : ':' . $config->port),
-        $config->user, $config->password, true)) {
+        if (
+            $this->_dbLink = @mysql_connect(
+                $config->host . (empty($config->port) ? '' : ':' . $config->port),
+                $config->user,
+                $config->password,
+                false
+            )
+        ) {
             if (@mysql_select_db($config->database, $this->_dbLink)) {
                 if ($config->charset) {
                     mysql_query("SET NAMES '{$config->charset}'", $this->_dbLink);
@@ -54,7 +61,7 @@ class Typecho_Db_Adapter_Mysql implements Typecho_Db_Adapter
         }
 
         /** 数据库异常 */
-        throw new Typecho_Db_Adapter_Exception(@mysql_error($this->_dbLink));
+        throw new Typecho_Db_Adapter_Exception($this->_dbLink ? @mysql_error($this->_dbLink) : @mysql_error());
     }
 
     /**
@@ -167,7 +174,7 @@ class Typecho_Db_Adapter_Mysql implements Typecho_Db_Adapter
         $sql['offset'] = (0 == strlen($sql['offset'])) ? NULL : ' OFFSET ' . $sql['offset'];
 
         return 'SELECT ' . $sql['fields'] . ' FROM ' . $sql['table'] .
-        $sql['where'] . $sql['group'] . $sql['having'] . $sql['order'] . $sql['limit'] . $sql['offset'];
+            $sql['where'] . $sql['group'] . $sql['having'] . $sql['order'] . $sql['limit'] . $sql['offset'];
     }
 
     /**

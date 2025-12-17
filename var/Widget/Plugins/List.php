@@ -32,7 +32,7 @@ class Widget_Plugins_List extends Typecho_Widget
      */
     protected function getPlugins()
     {
-        return glob(__TYPECHO_ROOT_DIR__ . '/' . __TYPECHO_PLUGIN_DIR__ . '/*');
+        return Typecho_Compat::glob(__TYPECHO_ROOT_DIR__ . '/' . __TYPECHO_PLUGIN_DIR__ . '/*');
     }
 
     /**

@@ -608,7 +608,7 @@ class Widget_Abstract_Contents extends Widget_Abstract
      */
     public function getTemplates()
     {
-        $files = glob($this->options->themeFile($this->options->theme, '*.php'));
+        $files = Typecho_Compat::glob($this->options->themeFile($this->options->theme, '*.php'));
         $result = array();
 
         foreach ($files as $file) {
@@ -646,14 +646,7 @@ class Widget_Abstract_Contents extends Widget_Abstract
         /** 取出第一个分类作为slug条件 */
         if (!empty($value['categories'])) {
             /** 使用自定义排序 */
-            usort($value['categories'], function ($a, $b) {
-                $field = 'order';
-                if ($a['order'] == $b['order']) {
-                    $field = 'mid';
-                }
-
-                return $a[$field] < $b[$field] ? -1 : 1;
-            });
+            usort($value['categories'], array($this, 'sortCategories'));
 
             $value['category'] = $value['categories'][0]['slug'];
 
@@ -1001,6 +994,22 @@ class Widget_Abstract_Contents extends Widget_Abstract
         }
 
         return $html;
+    }
+    /**
+     * Sort categories callback
+     * 
+     * @param array $a
+     * @param array $b
+     * @return integer
+     */
+    public function sortCategories($a, $b)
+    {
+        $field = 'order';
+        if ($a['order'] == $b['order']) {
+            $field = 'mid';
+        }
+
+        return $a[$field] < $b[$field] ? -1 : 1;
     }
 }
 
