@@ -1160,7 +1160,7 @@ class HyperDown
             }
 
             // 转义HTML特殊字符
-            $processedLines[] = htmlspecialchars($line);
+            $processedLines[] = htmlspecialchars($line, ENT_QUOTES);
         }
         $str = implode("\n", $this->markLines($processedLines, $start + 1));
         return $isEmpty ? '' :
@@ -1351,16 +1351,15 @@ class HyperDown
                 }
             }
 
-            function processRow($row)
-            {
+            $exploded = explode('|', $line);
+            $rows = array();
+            foreach ($exploded as $row) {
                 if (preg_match("/^\s*$/", $row)) {
-                    return ' ';
+                    $rows[] = ' ';
                 } else {
-                    return trim($row);
+                    $rows[] = trim($row);
                 }
             }
-            $exploded = explode('|', $line);
-            $rows = array_map('processRow', $exploded);
             $columns = array();
             $last = -1;
 
@@ -1391,17 +1390,18 @@ class HyperDown
             foreach ($columns as $key => $column) {
                 list($num, $text) = $column;
                 $tag = $head ? 'th' : 'td';
-
-                $html .= "<{$tag}";
+                $cell = '<' . $tag;
                 if ($num > 1) {
-                    $html .= " colspan=\"{$num}\"";
+                    $cell .= ' colspan="' . $num . '"';
                 }
-
                 if (isset($aligns[$key]) && $aligns[$key] != 'none') {
-                    $html .= " align=\"{$aligns[$key]}\"";
+                    $cell .= ' align="' . $aligns[$key] . '"';
                 }
+                $cell .= '>' . $this->parseInline($text, $this->_commonWhiteList) . '</' . $tag . '>';
 
-                $html .= '>' . $this->parseInline($text) . "</{$tag}>";
+                $cell = $this->filterDangerousAttributes($cell);
+
+                $html .= $cell;
             }
 
             $html .= '</tr>';
@@ -1495,6 +1495,22 @@ class HyperDown
         return '';
     }
 
+    private function filterDangerousAttributes($html)
+    {
+        // 移除所有 on* 事件属性（onclick, onload, onerror, onmouseover 等）
+        $html = preg_replace('/\s+on[a-z]+\s*=\s*["\'][^"\']*["\']/i', '', $html);
+        $html = preg_replace('/\s+on[a-z]+\s*=\s*[^"\'\s>]+/i', '', $html);
+
+        // 移除 javascript: vbscript: data: 等危险协议（href/src）
+        $html = preg_replace('/\s+(href|src)\s*=\s*["\']?\s*(javascript|vbscript|data|livescript):/i', ' $1="blocked:', $html);
+
+        // 移除 style 中 expression 和 import（IE 旧版 XSS 向量）
+        $html = preg_replace('/\s+style\s*=\s*["\'][^"\']*expression\s*\(/i', ' style="', $html);
+        $html = preg_replace('/\s+style\s*=\s*["\'][^"\']*import\s*\(/i', ' style="', $html);
+
+        return $html;
+    }
+
     /**
      * parseHtml
      *
@@ -1510,6 +1526,8 @@ class HyperDown
                 $line,
                 isset($this->_specialWhiteList[$type]) ? $this->_specialWhiteList[$type] : ''
             );
+
+            $line = $this->filterDangerousAttributes($line);
         }
 
         return implode("\n", $this->markLines($lines, $start));
