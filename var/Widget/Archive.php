@@ -243,14 +243,14 @@ class Archive extends Contents
             switch (true) {
                 case 0 === strpos($this->request->feed, '/rss/') || '/rss' == $this->request->feed:
                     /** 如果是RSS1标准 */
-                    $this->request->feed = substr($this->request->feed, 4);
+                    @$this->request->feed = substr($this->request->feed, 4);
                     $this->feedType = Feed::RSS1;
                     $this->currentFeedUrl = $this->options->feedRssUrl;
                     $this->feedContentType = 'application/rdf+xml';
                     break;
                 case 0 === strpos($this->request->feed, '/atom/') || '/atom' == $this->request->feed:
                     /** 如果是ATOM标准 */
-                    $this->request->feed = substr($this->request->feed, 5);
+                    @$this->request->feed = substr($this->request->feed, 5);
                     $this->feedType = Feed::ATOM1;
                     $this->currentFeedUrl = $this->options->feedAtomUrl;
                     $this->feedContentType = 'application/atom+xml';
