@@ -95,7 +95,7 @@ class Request
         foreach ($filters as $filter) {
             $this->filter[] = $this->wrapFilter(
                 is_string($filter) && isset(self::FILTERS[$filter])
-                ? self::FILTERS[$filter] : $filter
+                    ? self::FILTERS[$filter] : $filter
             );
         }
 
@@ -214,6 +214,16 @@ class Request
     }
 
     /**
+     * 获取请求的内容类型
+     *
+     * @return string|null
+     */
+    public function getContentType(): ?string
+    {
+        return $this->request->getContentType();
+    }
+
+    /**
      * 获取环境变量
      *
      * @param string $name 获取环境变量名
@@ -316,6 +326,17 @@ class Request
     {
         return $this->request->isAjax();
     }
+
+    /**
+     * 判断是否为json
+     *
+     * @return boolean
+     */
+    public function isJson(): bool
+    {
+        return $this->request->isJson();
+    }
+
 
     /**
      * 判断输入是否满足要求
