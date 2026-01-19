@@ -236,6 +236,10 @@ namespace Typecho {
                 } elseif ($exception instanceof \Typecho\Db\Adapter\SQLException) {
                     $message = 'Database Query Error';
                 }
+            } elseif ($exception instanceof \Typecho\Widget\Exception) {
+                $message = $exception->getMessage();
+            } else {
+                $message = 'Server Error';
             }
 
             /** 设置http code */
