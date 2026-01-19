@@ -4,7 +4,7 @@
   "description": "Typecho build tools",
   "main": "build.js",
   "engines": {
-      "node": "16.x"
+    "node": "16.x"
   },
   "scripts": {
     "build_js": "node build.js js",
@@ -20,5 +20,8 @@
     "node-sass": "^6.0.1",
     "sprite-magic-importer": "^1.6.2",
     "uglify-js": "^3.11.6"
+  },
+  "volta": {
+    "node": "16.20.2"
   }
 }
