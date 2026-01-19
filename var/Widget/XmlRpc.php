@@ -392,15 +392,15 @@ class XmlRpc extends Contents implements ActionInterface, Hook
         }
 
         $input['allowComment'] = (isset($content['mt_allow_comments']) && (1 == $content['mt_allow_comments']
-                || 'open' == $content['mt_allow_comments']))
+            || 'open' == $content['mt_allow_comments']))
             ? 1 : ((isset($content['mt_allow_comments']) && (0 == $content['mt_allow_comments']
-                    || 'closed' == $content['mt_allow_comments']))
+                || 'closed' == $content['mt_allow_comments']))
                 ? 0 : $this->options->defaultAllowComment);
 
         $input['allowPing'] = (isset($content['mt_allow_pings']) && (1 == $content['mt_allow_pings']
-                || 'open' == $content['mt_allow_pings']))
+            || 'open' == $content['mt_allow_pings']))
             ? 1 : ((isset($content['mt_allow_pings']) && (0 == $content['mt_allow_pings']
-                    || 'closed' == $content['mt_allow_pings'])) ? 0 : $this->options->defaultAllowPing);
+                || 'closed' == $content['mt_allow_pings'])) ? 0 : $this->options->defaultAllowPing);
 
         $input['allowFeed'] = $this->options->defaultAllowFeed;
         $input['do'] = $publish ? 'publish' : 'save';
@@ -592,7 +592,7 @@ class XmlRpc extends Contents implements ActionInterface, Hook
         while ($pages->next()) {
             $pageStructs[] = [
                 'dateCreated'      => new Date($this->options->timezone + $pages->created),
-                'date_created_gmt' => new Date($this->options->timezone + $pages->created),
+                'date_created_gmt' => new Date($pages->created),
                 'page_id'          => $pages->cid,
                 'page_title'       => $pages->title,
                 'page_parent_id'   => '0',
@@ -959,7 +959,7 @@ class XmlRpc extends Contents implements ActionInterface, Hook
         }
 
         return [
-            'date_created_gmt' => new Date($this->options->timezone + $comment->created),
+            'date_created_gmt' => new Date($comment->created),
             'user_id'          => $comment->authorId,
             'comment_id'       => $comment->coid,
             'parent'           => $comment->parent,
@@ -1013,7 +1013,7 @@ class XmlRpc extends Contents implements ActionInterface, Hook
 
         while ($comments->next()) {
             $commentsStruct[] = [
-                'date_created_gmt' => new Date($this->options->timezone + $comments->created),
+                'date_created_gmt' => new Date($comments->created),
                 'user_id'          => $comments->authorId,
                 'comment_id'       => $comments->coid,
                 'parent'           => $comments->parent,
@@ -1188,7 +1188,7 @@ class XmlRpc extends Contents implements ActionInterface, Hook
         while ($attachments->next()) {
             $attachmentsStruct[] = [
                 'attachment_id'    => $attachments->cid,
-                'date_created_gmt' => new Date($this->options->timezone + $attachments->created),
+                'date_created_gmt' => new Date($attachments->created),
                 'parent'           => $attachments->parent,
                 'link'             => $attachments->attachment->url,
                 'title'            => $attachments->title,
@@ -1219,7 +1219,7 @@ class XmlRpc extends Contents implements ActionInterface, Hook
 
         return [
             'attachment_id'    => $attachment->cid,
-            'date_created_gmt' => new Date($this->options->timezone + $attachment->created),
+            'date_created_gmt' => new Date($attachment->created),
             'parent'           => $attachment->parent,
             'link'             => $attachment->attachment->url,
             'title'            => $attachment->title,
@@ -1431,7 +1431,7 @@ class XmlRpc extends Contents implements ActionInterface, Hook
                 'userid'           => $posts->authorId,
                 'postid'           => $posts->cid,
                 'title'            => $posts->title,
-                'date_created_gmt' => new Date($this->options->timezone + $posts->created)
+                'date_created_gmt' => new Date($posts->created)
             ];
         }
 
