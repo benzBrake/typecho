@@ -106,7 +106,7 @@ class Edit extends PostEdit implements ActionInterface
 
         /** 取出数据 */
         $input = $this->request->from('name', 'slug', 'description');
-        $input['slug'] = Common::slugName(empty($input['slug']) ? $input['name'] : $input['slug']);
+        $input['slug'] = Common::slugName(Common::strBy($input['slug'], $input['name']));
 
         $attachment['title'] = $input['name'];
         $attachment['slug'] = $input['slug'];

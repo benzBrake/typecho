@@ -128,7 +128,7 @@ class Edit extends Metas implements ActionInterface
         /** 取出数据 */
         $category = $this->request->from('name', 'slug', 'description', 'parent');
 
-        $category['slug'] = Common::slugName(empty($category['slug']) ? $category['name'] : $category['slug']);
+        $category['slug'] = Common::slugName(Common::strBy($category['slug'], $category['name']));
         $category['type'] = 'category';
         $category['order'] = $this->getMaxOrder('category', $category['parent']) + 1;
 
@@ -279,7 +279,7 @@ class Edit extends Metas implements ActionInterface
         /** 取出数据 */
         $category = $this->request->from('name', 'slug', 'description', 'parent');
         $category['mid'] = $this->request->mid;
-        $category['slug'] = Common::slugName(empty($category['slug']) ? $category['name'] : $category['slug']);
+        $category['slug'] = Common::slugName(Common::strBy($category['slug'], $category['name']));
         $category['type'] = 'category';
         $current = $this->db->fetchRow($this->select()->where('mid = ?', $category['mid']));
 
