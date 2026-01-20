@@ -15,9 +15,9 @@ class Value
 
     /**
      * @param mixed $data
-     * @param bool|string $type
+     * @param string|null $type
      */
-    public function __construct($data, $type = false)
+    public function __construct($data, ?string $type = null)
     {
         $this->data = $data;
         if (!$type) {

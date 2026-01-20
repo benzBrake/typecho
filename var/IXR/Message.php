@@ -40,7 +40,7 @@ class Message
 
     private $currentStructName = [];  // A stack as well
 
-    private $currentTagContents;
+    private $currentTagContents = '';
 
     /**
      * @param string $message
