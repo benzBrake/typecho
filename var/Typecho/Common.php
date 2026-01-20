@@ -1,4 +1,5 @@
 <?php
+
 /**
  * API方法,Typecho命名空间
  *
@@ -112,10 +113,14 @@ class Typecho_Common
     public static function __removeUrlXss($string)
     {
         $string = str_replace(array('%0d', '%0a'), '', strip_tags($string));
-        return preg_replace(array(
+        $string = preg_replace(array(
             "/\(\s*(\"|')/i",           //函数开头
             "/(\"|')\s*\)/i",           //函数结尾
         ), '', $string);
+        // Remove quotes and other dangerous characters that could be used for XSS attacks
+        // These characters can break out of HTML attributes
+        $string = str_replace(array('"', "'", '<', '>'), '', $string);
+        return $string;
     }
 
     /**
@@ -193,7 +198,6 @@ class Typecho_Common
                         $value = '';
                     }
                 }
-
             } else if (ctype_space($attrs[$i]) && -1 == $pos) {
                 $pos = -2;
             } else if ('=' == $attrs[$i] && 0 > $pos) {
@@ -350,7 +354,7 @@ class Typecho_Common
             require_once __TYPECHO_EXCEPTION_FILE__;
         } else {
             echo
-                <<<EOF
+            <<<EOF
 <!DOCTYPE html>
 <html lang="en">
     <head>
@@ -1633,7 +1637,7 @@ EOF;
                 case false !== strpos($stream, 'html') || false !== strpos($stream, 'xml') || false !== strpos($stream, 'wml'):
                     return 'html';
                 case false !== strpos($stream, 'compressed') || false !== strpos($stream, 'zip') ||
-                in_array($stream, array('application/x-gtar', 'application/x-tar')):
+                    in_array($stream, array('application/x-gtar', 'application/x-tar')):
                     return 'archive';
                 case 'text' == $type && 0 === strpos($stream, 'x-'):
                     return 'script';
