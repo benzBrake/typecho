@@ -28,6 +28,7 @@ class Widget_Do extends Typecho_Widget
         'register'                  =>  'Widget_Register',
         'upgrade'                   =>  'Widget_Upgrade',
         'upload'                    =>  'Widget_Upload',
+        'upload-chunked'            =>  'Widget_Upload_Chunked',
         'service'                   =>  'Widget_Service',
         'xmlrpc'                    =>  'Widget_XmlRpc',
         'comments-edit'             =>  'Widget_Comments_Edit',
