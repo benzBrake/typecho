@@ -138,7 +138,7 @@ class Contents extends Base implements QueryInterface
 
         /** 更新缩略名 */
         if ($insertId > 0) {
-            $this->applySlug(!isset($rows['slug']) || strlen($rows['slug']) === 0 ? null : $rows['slug'], $insertId);
+            $this->applySlug(!isset($rows['slug']) || strlen($rows['slug']) === 0 ? null : $rows['slug'], $insertId, $insertStruct['title']);
         }
 
         return $insertId;
@@ -149,10 +149,11 @@ class Contents extends Base implements QueryInterface
      *
      * @param string|null $slug 缩略名
      * @param mixed $cid 内容id
+     * @param string $title 标题
      * @return string
      * @throws Exception
      */
-    public function applySlug(?string $slug, $cid): string
+    public function applySlug(?string $slug, $cid, string $title): string
     {
         if ($cid instanceof Query) {
             $cid = $this->db->fetchObject($cid->select('cid')
@@ -160,6 +161,10 @@ class Contents extends Base implements QueryInterface
         }
 
         /** 生成一个非空的缩略名 */
+        if ((!isset($slug) || strlen($slug) === 0) && preg_match_all("/\w+/", $title, $matches)) {
+            $slug = implode('-', $matches[0]);
+        }
+
         $slug = Common::slugName($slug, $cid);
         $result = $slug;
 
@@ -167,7 +172,7 @@ class Contents extends Base implements QueryInterface
         $draft = $this->db->fetchObject($this->db->select('type', 'parent')
             ->from('table.contents')->where('cid = ?', $cid));
 
-        if ('_draft' == substr($draft->type, - 6) && $draft->parent) {
+        if (preg_match("/_draft$/", $draft->type) && $draft->parent) {
             $result = '@' . $result;
         }
 
@@ -240,7 +245,7 @@ class Contents extends Base implements QueryInterface
         /** 更新缩略名 */
         if ($updateRows > 0 && isset($rows['slug'])) {
             $this->applySlug(!isset($rows['slug']) || strlen($rows['slug']) === 0
-                ? null : $rows['slug'], $updateCondition);
+                ? null : $rows['slug'], $updateCondition, $updateStruct['title']);
         }
 
         return $updateRows;
@@ -512,7 +517,7 @@ class Contents extends Base implements QueryInterface
                     $field = 'mid';
                 }
 
-                return $a[$field] < $b[$field] ? - 1 : 1;
+                return $a[$field] < $b[$field] ? -1 : 1;
             });
 
             $value['category'] = $value['categories'][0]['slug'];
@@ -638,7 +643,7 @@ class Contents extends Base implements QueryInterface
     {
         echo false !== $more && false !== strpos($this->text, '<!--more-->') ?
             $this->excerpt
-                . "<p class=\"more\"><a href=\"{$this->permalink}\" title=\"{$this->title}\">{$more}</a></p>"
+            . "<p class=\"more\"><a href=\"{$this->permalink}\" title=\"{$this->title}\">{$more}</a></p>"
             : $this->content;
     }
 

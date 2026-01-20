@@ -411,14 +411,15 @@ class Edit extends Contents implements ActionInterface
         $realId = 0;
 
         /** 是否是从草稿状态发布 */
-        $isDraftToPublish = ('post_draft' == $this->type || 'page_draft' == $this->type);
-
-        $isBeforePublish = ('publish' == $this->status);
-        $isAfterPublish = ('publish' == $contents['status']);
+        $isDraftToPublish = false;
+        $isBeforePublish = false;
+        $isAfterPublish = 'publish' === $contents['status'];
 
         /** 重新发布现有内容 */
         if ($this->have()) {
-
+            $isDraftToPublish = preg_match("/_draft$/", $this->type);
+            $isBeforePublish = 'publish' === $this->status;
+            
             /** 如果它本身不是草稿, 需要删除其草稿 */
             if (!$isDraftToPublish && $this->draft) {
                 $cid = $this->draft['cid'];
