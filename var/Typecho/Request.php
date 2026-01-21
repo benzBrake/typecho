@@ -204,9 +204,28 @@ class Typecho_Request
     public function __construct()
     {
         if (false === self::$_httpParams) {
-            self::$_httpParams = array_filter(array_merge($_POST, $_GET),
+            // 处理 magic_quotes_gpc 导致的双重转义问题
+            $getPost = $this->_stripSlashes($_POST);
+            $getGet = $this->_stripSlashes($_GET);
+
+            self::$_httpParams = array_filter(array_merge($getPost, $getGet),
                 array('Typecho_Common', 'checkStrEncoding'));
         }
+    }
+
+    /**
+     * 递归去除 magic_quotes_gpc 添加的转义字符
+     *
+     * @param array $data 输入数据
+     * @return array
+     */
+    private function _stripSlashes($data)
+    {
+        if (!get_magic_quotes_gpc()) {
+            return $data;
+        }
+
+        return is_array($data) ? array_map(array($this, '_stripSlashes'), $data) : stripslashes($data);
     }
 
     /**
